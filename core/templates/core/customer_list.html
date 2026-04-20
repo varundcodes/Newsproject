@@ -1,0 +1,25 @@
+
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="card">
+    <h2>Customer List</h2>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Area</th>
+            <th>Newspaper</th>
+            <th>Status</th>
+        </tr>
+        {% for c in customers %}
+        <tr>
+            <td>{{ c.name }}</td>
+            <td>{{ c.phone }}</td>
+            <td>{{ c.area.name }}</td>
+            <td>{{ c.newspaper.name }}</td>
+            <td>{% if c.active %}Active{% else %}Inactive{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

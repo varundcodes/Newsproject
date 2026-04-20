@@ -1,0 +1,55 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Area Wise Customer List</h2>
+
+    <form method="GET" style="margin-bottom:20px;">
+        <label><strong>Select Area</strong></label>
+        <select name="area" onchange="this.form.submit()">
+            <option value="">All Areas</option>
+            {% for area in areas %}
+                <option value="{{ area.id }}" {% if selected_area_id == area.id|stringformat:"s" %}selected{% endif %}>
+                    {{ area.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Area</th>
+            <th>Newspaper</th>
+            <th>Status</th>
+        </tr>
+
+        {% for c in customers %}
+        <tr>
+            <td>{{ c.name }}</td>
+            <td>{{ c.phone }}</td>
+            <td>{{ c.area.name }}</td>
+            <td>
+                {% if c.newspaper %}
+                    {{ c.newspaper.name }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if c.active %}
+                    Active
+                {% else %}
+                    Inactive
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">No customers found for this area.</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

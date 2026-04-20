@@ -1,0 +1,110 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+    <h2>Welcome, {{ customer.name }}</h2>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="btn" href="javascript:history.back()">Back</a>
+        <a class="btn" href="{% url 'customer_logout' %}">Logout</a>
+    </div>
+</div>
+
+<div class="card">
+    <p><strong>Phone:</strong> {{ customer.phone }}</p>
+    <p><strong>Area:</strong> {{ customer.area.name }}</p>
+    <p><strong>Address:</strong> {{ customer.address }}</p>
+</div>
+
+{% if latest_bill %}
+<div class="card">
+    <h3>Current Bill</h3>
+
+    <table>
+        <tr>
+            <th>Month</th>
+            <td>{{ latest_bill.month }} {{ latest_bill.year }}</td>
+        </tr>
+        <tr>
+            <th>Newspaper Amount</th>
+            <td>₹ {{ latest_bill.newspaper_amount }}</td>
+        </tr>
+        <tr>
+            <th>Additional Paper</th>
+            <td>₹ {{ latest_bill.additional_paper_amount }}</td>
+        </tr>
+        <tr>
+            <th>Weekly Magazine</th>
+            <td>₹ {{ latest_bill.weekly_magazine_amount }}</td>
+        </tr>
+        <tr>
+            <th>Monthly Magazine</th>
+            <td>₹ {{ latest_bill.monthly_magazine_amount }}</td>
+        </tr>
+        <tr>
+            <th><strong>Total Amount</strong></th>
+            <td><strong>₹ {{ latest_bill.total_amount }}</strong></td>
+        </tr>
+        <tr>
+            <th>Status</th>
+            <td>
+                {% if latest_bill.is_paid %}
+                    Paid
+                {% else %}
+                    Pending
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+</div>
+
+{% if not latest_bill.is_paid %}
+<div class="card">
+    <h3>Payment Options</h3>
+
+    <p><strong>Amount to Pay:</strong> ₹ {{ latest_bill.total_amount }}</p>
+    <p><strong>UPI ID:</strong> {{ owner_upi_id }}</p>
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin:15px 0;">
+        <a class="btn" href="{{ upi_link }}">Pay with GPay</a>
+        <a class="btn" href="{{ upi_link }}">Pay with PhonePe</a>
+        <a class="btn" href="{{ upi_link }}">Pay with Paytm</a>
+    </div>
+
+    <p><strong>GPay Number:</strong> {{ owner_gpay_number }}</p>
+    <p><strong>PhonePe Number:</strong> {{ owner_phonepe_number }}</p>
+    <p><strong>Paytm Number:</strong> {{ owner_paytm_number }}</p>
+
+    <div style="margin-top:20px;">
+        <h4>Scan QR Code</h4>
+        <img src="/media/qr_code.jpg" alt="QR Code" style="width:250px; height:auto; border:1px solid #ddd; padding:10px; border-radius:10px;">
+    </div>
+
+    <div style="margin-top:20px;">
+        <a class="btn" href="{% url 'upload_payment' latest_bill.id %}">Upload Payment Screenshot</a>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+<div class="card">
+    <h3>Payment History</h3>
+    <table>
+        <tr>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Date</th>
+        </tr>
+        {% for p in payments %}
+        <tr>
+            <td>₹ {{ p.amount }}</td>
+            <td>{{ p.status }}</td>
+            <td>{{ p.date }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="3">No payments uploaded yet.</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

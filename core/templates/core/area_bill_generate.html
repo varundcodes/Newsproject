@@ -1,0 +1,78 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Area Wise Billing</h2>
+
+    <form method="GET" style="margin-bottom:20px;">
+        <label><strong>Select Area</strong></label>
+        <select name="area" required>
+            <option value="">Select Area</option>
+            {% for area in areas %}
+                <option value="{{ area.id }}" {% if selected_area_id == area.id|stringformat:"s" %}selected{% endif %}>
+                    {{ area.name }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <label><strong>Select Month</strong></label>
+        <select name="month" required>
+            <option value="">Select Month</option>
+            {% for value, label in month_choices %}
+                <option value="{{ value }}" {% if month == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <label><strong>Year</strong></label>
+        <input type="number" name="year" value="{{ year|default:'2026' }}" required>
+
+        <button class="btn" type="submit">Load Customers</button>
+    </form>
+</div>
+
+{% if customers %}
+<div class="card">
+    <h3>Customers in Selected Area</h3>
+
+    <form method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="area" value="{{ selected_area_id }}">
+        <input type="hidden" name="month" value="{{ month }}">
+        <input type="hidden" name="year" value="{{ year }}">
+
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Newspaper</th>
+                <th>Additional Paper</th>
+                <th>Weekly Magazine</th>
+                <th>Monthly Magazine</th>
+                <th>WhatsApp</th>
+            </tr>
+
+            {% for customer in customers %}
+            <tr>
+                <td>{{ customer.name }}</td>
+                <td>{{ customer.phone }}</td>
+                <td>{% if customer.newspaper %}{{ customer.newspaper.name }}{% else %}-{% endif %}</td>
+                <td>{% if customer.additional_paper %}{{ customer.additional_paper.name }}{% else %}-{% endif %}</td>
+                <td>{% if customer.weekly_magazine %}{{ customer.weekly_magazine.name }}{% else %}-{% endif %}</td>
+                <td>{% if customer.monthly_magazine %}{{ customer.monthly_magazine.name }}{% else %}-{% endif %}</td>
+                <td>
+                    {% if month and year %}
+                        <a href="{{ customer.whatsapp_link }}" target="_blank">Send</a>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <br>
+        <button class="btn" type="submit">Generate Bills for This Area</button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}

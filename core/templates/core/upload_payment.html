@@ -1,0 +1,15 @@
+
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="card">
+    <h2>Upload Payment</h2>
+    <p><strong>Bill:</strong> {{ bill.month }} {{ bill.year }}</p>
+    <p><strong>Amount:</strong> ₹ {{ bill.total_amount }}</p>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn" type="submit">Submit Payment</button>
+    </form>
+</div>
+{% endblock %}

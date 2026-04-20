@@ -1,0 +1,53 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Area Wise Payment History</h2>
+
+    <form method="GET" style="margin-bottom:20px;">
+        <label><strong>Select Area</strong></label>
+        <select name="area" onchange="this.form.submit()">
+            <option value="">All Areas</option>
+            {% for area in areas %}
+                <option value="{{ area.id }}" {% if selected_area_id == area.id|stringformat:"s" %}selected{% endif %}>
+                    {{ area.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <table>
+        <tr>
+            <th>Customer</th>
+            <th>Phone</th>
+            <th>Area</th>
+            <th>Month</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Screenshot</th>
+        </tr>
+
+        {% for p in payments %}
+        <tr>
+            <td>{{ p.customer.name }}</td>
+            <td>{{ p.customer.phone }}</td>
+            <td>{{ p.customer.area.name }}</td>
+            <td>{{ p.bill.month }} {{ p.bill.year }}</td>
+            <td>₹ {{ p.amount }}</td>
+            <td>{{ p.status }}</td>
+            <td>
+                {% if p.screenshot %}
+                    <a href="{{ p.screenshot.url }}" target="_blank">View</a>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7">No payments found</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}
