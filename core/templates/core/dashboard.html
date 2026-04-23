@@ -1,0 +1,63 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="page-title">
+    <div>
+        <h2>Admin Dashboard</h2>
+        <p>Overview of your NewsHub system</p>
+    </div>
+</div>
+
+<div class="summary-grid">
+    <div class="summary-box">
+        <h4>Total Customers</h4>
+        <div class="value">{{ total_customers }}</div>
+    </div>
+
+    <div class="summary-box">
+        <h4>Total Areas</h4>
+        <div class="value">{{ total_areas }}</div>
+    </div>
+
+    <div class="summary-box">
+        <h4>Total Bills</h4>
+        <div class="value">{{ total_bills }}</div>
+    </div>
+
+    <div class="summary-box">
+        <h4>Pending Payments</h4>
+        <div class="value">{{ pending_payments }}</div>
+    </div>
+
+    <div class="summary-box">
+        <h4>Total Collection</h4>
+        <div class="value">₹ {{ total_collection }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Area-wise Customer Count</h3>
+
+    <div class="table-wrap">
+        <table>
+            <tr>
+                <th>Area</th>
+                <th>Customers</th>
+            </tr>
+
+            {% for item in area_data %}
+            <tr>
+                <td>{{ item.area__name }}</td>
+                <td>{{ item.count }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2">No data available</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+{% endblock %}

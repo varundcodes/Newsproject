@@ -3,15 +3,58 @@
 <head>
     <title>Customer Login</title>
     <style>
-        body { font-family: Arial; background:#f3f4f6; }
-        .box { width:400px; margin:100px auto; background:white; padding:30px; border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,0.1); }
-        input { width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; }
-        button { width:100%; padding:12px; background:#2563eb; color:white; border:none; border-radius:8px; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f4f6;
+            margin: 0;
+            padding: 0;
+        }
+        .box {
+            width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .msg {
+            color: red;
+            margin-bottom: 12px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <div class="box">
         <h2>Customer Login</h2>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="msg">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
         <form method="POST">
             {% csrf_token %}
             <input type="text" name="phone" placeholder="Phone Number" required>

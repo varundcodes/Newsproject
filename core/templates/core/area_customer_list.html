@@ -1,55 +1,103 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
-<div class="card">
-    <h2>Area Wise Customer List</h2>
 
-    <form method="GET" style="margin-bottom:20px;">
-        <label><strong>Select Area</strong></label>
-        <select name="area" onchange="this.form.submit()">
-            <option value="">All Areas</option>
-            {% for area in areas %}
-                <option value="{{ area.id }}" {% if selected_area_id == area.id|stringformat:"s" %}selected{% endif %}>
-                    {{ area.name }}
-                </option>
-            {% endfor %}
-        </select>
-    </form>
+<div class="page-title">
+    <div>
+        <h2>Area Customer List</h2>
+        <p>Select area and search customers</p>
+    </div>
 
-    <table>
-        <tr>
-            <th>Name</th>
-            <th>Phone</th>
-            <th>Area</th>
-            <th>Newspaper</th>
-            <th>Status</th>
-        </tr>
-
-        {% for c in customers %}
-        <tr>
-            <td>{{ c.name }}</td>
-            <td>{{ c.phone }}</td>
-            <td>{{ c.area.name }}</td>
-            <td>
-                {% if c.newspaper %}
-                    {{ c.newspaper.name }}
-                {% else %}
-                    -
-                {% endif %}
-            </td>
-            <td>
-                {% if c.active %}
-                    Active
-                {% else %}
-                    Inactive
-                {% endif %}
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="5">No customers found for this area.</td>
-        </tr>
-        {% endfor %}
-    </table>
+    <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
 </div>
+
+<div class="card">
+    <form method="GET" class="search-bar">
+        <div>
+            <label>Select Area</label>
+            <select name="area">
+                <option value="">Select Area</option>
+                {% for a in areas %}
+                    <option value="{{ a.id }}" {% if selected_area_id == a.id|stringformat:"s" %}selected{% endif %}>
+                        {{ a.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label>Search</label>
+            <input type="text" name="search" value="{{ search }}" placeholder="Enter name or phone">
+        </div>
+
+        <div>
+            <button type="submit" class="btn">Filter</button>
+        </div>
+    </form>
+</div>
+
+{% if customers %}
+<div class="card">
+    <div class="table-wrap">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Area</th>
+                <th>Newspaper</th>
+                <th>Status</th>
+                <th>Stop Dates</th>
+                <th>Actions</th>
+            </tr>
+
+            {% for c in customers %}
+            <tr>
+                <td>{{ c.name }}</td>
+                <td>{{ c.phone }}</td>
+                <td>{{ c.area.name }}</td>
+                <td>
+                    {% if c.newspaper %}
+                        {{ c.newspaper.name }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+
+                <td>
+                    {% if c.status == "Active" %}
+                        <span class="badge badge-active">Active</span>
+                    {% elif c.status == "Stopped" %}
+                        <span class="badge badge-stopped">Stopped</span>
+                    {% else %}
+                        <span class="badge badge-inactive">Inactive</span>
+                    {% endif %}
+                </td>
+
+                <td>
+                    {% if c.stop_start_date and c.stop_end_date %}
+                        {{ c.stop_start_date }} to {{ c.stop_end_date }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+
+                <td>
+                    <div class="actions">
+                        <a href="{% url 'activate_customer' c.id %}?area={{ selected_area_id }}&search={{ search }}" class="btn btn-success">Active</a>
+                        <a href="{% url 'stop_customer' c.id %}?area={{ selected_area_id }}&search={{ search }}" class="btn btn-warning">Stop</a>
+                        <a href="{% url 'deactivate_customer' c.id %}?area={{ selected_area_id }}&search={{ search }}" class="btn btn-danger">Inactive</a>
+                        <a href="{% url 'delete_customer' c.id %}?area={{ selected_area_id }}&search={{ search }}" class="btn btn-danger">Delete</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card empty-box">
+    <p>Select an area to view customers</p>
+</div>
+{% endif %}
+
 {% endblock %}

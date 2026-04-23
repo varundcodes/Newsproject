@@ -1,12 +1,54 @@
-
 {% extends 'core/base.html' %}
+
 {% block content %}
+
+<div class="page-title">
+    <div>
+        <h2>Generate Bill</h2>
+        <p>Create a bill for a single customer</p>
+    </div>
+
+    <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+</div>
+
 <div class="card">
-    <h2>Generate Bill</h2>
-    <form method="POST">
+    <form method="POST" class="search-bar">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button class="btn" type="submit">Save Bill</button>
+
+        <div>
+            <label>Select Customer</label>
+            <select name="customer" required>
+                <option value="">Select Customer</option>
+                {% for c in customers %}
+                    <option value="{{ c.id }}">{{ c.name }} - {{ c.phone }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label>Select Month</label>
+            <select name="month" required>
+                <option value="">Select Month</option>
+                {% for value, label in month_choices %}
+                    <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label>Year</label>
+            <input type="number" name="year" value="2026" required>
+        </div>
+
+        <div>
+            <button type="submit" class="btn">Generate Bill</button>
+        </div>
     </form>
 </div>
+
+<div class="card">
+    <p><strong>Note:</strong> This page is for generating a bill for one customer only.</p>
+    <p>For monthly billing of all customers in one area, use <strong>Area Bill</strong>.</p>
+</div>
+
 {% endblock %}

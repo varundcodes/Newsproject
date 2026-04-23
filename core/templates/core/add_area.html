@@ -1,11 +1,27 @@
 {% extends 'core/base.html' %}
+
 {% block content %}
+
+<div class="page-title">
+    <div>
+        <h2>Add Area</h2>
+        <p>Create a new delivery area</p>
+    </div>
+
+    <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+</div>
+
 <div class="card">
-    <h2>Add Area</h2>
     <form method="POST">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button class="btn" type="submit">Save Area</button>
+
+        <div style="margin-bottom:15px;">
+            <label>Area Name</label>
+            {{ form.name }}
+        </div>
+
+        <button type="submit" class="btn">Save Area</button>
     </form>
 </div>
+
 {% endblock %}

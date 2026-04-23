@@ -1,13 +1,97 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
-<div class="card">
-    <h2>Add Customer</h2>
 
+<div class="page-title">
+    <div>
+        <h2>Add Customer</h2>
+        <p>Create a new customer account</p>
+    </div>
+
+    <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+</div>
+
+<div class="card">
     <form method="POST">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button class="btn" type="submit">Save Customer</button>
+
+        <div class="form-row">
+            <div>
+                <label>Name</label>
+                {{ form.name }}
+            </div>
+
+            <div>
+                <label>Phone</label>
+                {{ form.phone }}
+            </div>
+
+            <div>
+                <label>Area</label>
+                {{ form.area }}
+            </div>
+
+            <div>
+                <label>Status</label>
+                {{ form.status }}
+            </div>
+        </div>
+
+        <div style="margin-top:15px;">
+            <label>Address</label>
+            {{ form.address }}
+        </div>
+
+        <hr style="margin:20px 0; border:none; border-top:1px solid #e5e7eb;">
+
+        <h3>Subscription Details</h3>
+
+        <div class="form-row">
+            <div>
+                <label>Newspaper</label>
+                {{ form.newspaper }}
+            </div>
+
+            <div>
+                <label>Custom Newspaper Price</label>
+                {{ form.custom_newspaper_price }}
+            </div>
+
+            <div>
+                <label>Additional Paper</label>
+                {{ form.additional_paper }}
+            </div>
+
+            <div>
+                <label>Custom Additional Price</label>
+                {{ form.custom_additional_price }}
+            </div>
+
+            <div>
+                <label>Weekly Magazine</label>
+                {{ form.weekly_magazine }}
+            </div>
+
+            <div>
+                <label>Custom Weekly Price</label>
+                {{ form.custom_weekly_price }}
+            </div>
+
+            <div>
+                <label>Monthly Magazine</label>
+                {{ form.monthly_magazine }}
+            </div>
+
+            <div>
+                <label>Custom Monthly Price</label>
+                {{ form.custom_monthly_price }}
+            </div>
+        </div>
+
+        <div style="margin-top:20px;">
+            <button type="submit" class="btn">Save Customer</button>
+        </div>
     </form>
 </div>
+
 {% endblock %}

@@ -1,25 +1,73 @@
-
 {% extends 'core/base.html' %}
+
 {% block content %}
-<div class="card">
-    <h2>Customer List</h2>
-    <table>
-        <tr>
-            <th>Name</th>
-            <th>Phone</th>
-            <th>Area</th>
-            <th>Newspaper</th>
-            <th>Status</th>
-        </tr>
-        {% for c in customers %}
-        <tr>
-            <td>{{ c.name }}</td>
-            <td>{{ c.phone }}</td>
-            <td>{{ c.area.name }}</td>
-            <td>{{ c.newspaper.name }}</td>
-            <td>{% if c.active %}Active{% else %}Inactive{% endif %}</td>
-        </tr>
-        {% endfor %}
-    </table>
+
+<div class="page-title">
+    <div>
+        <h2>Customer List</h2>
+        <p>Search and manage all customers</p>
+    </div>
+     <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
 </div>
+
+<div class="card">
+    <form method="GET" class="search-bar">
+        <div>
+            <label>Search</label>
+            <input type="text" name="search" value="{{ search }}" placeholder="Enter name or phone">
+        </div>
+
+        <div>
+            <button type="submit" class="btn">Search</button>
+        </div>
+    </form>
+</div>
+
+{% if customers %}
+<div class="card">
+    <div class="table-wrap">
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Area</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+
+            {% for c in customers %}
+            <tr>
+                <td>{{ c.name }}</td>
+                <td>{{ c.phone }}</td>
+                <td>{{ c.area.name }}</td>
+
+                <td>
+                    {% if c.status == "Active" %}
+                        <span class="badge badge-active">Active</span>
+                    {% elif c.status == "Stopped" %}
+                        <span class="badge badge-stopped">Stopped</span>
+                    {% else %}
+                        <span class="badge badge-inactive">Inactive</span>
+                    {% endif %}
+                </td>
+
+                <td>
+                    <div class="actions">
+                        <a href="{% url 'activate_customer' c.id %}" class="btn btn-success">Active</a>
+                        <a href="{% url 'stop_customer' c.id %}" class="btn btn-warning">Stop</a>
+                        <a href="{% url 'deactivate_customer' c.id %}" class="btn btn-danger">Inactive</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card empty-box">
+    <p>Search customers to view list</p>
+</div>
+{% endif %}
+
 {% endblock %}

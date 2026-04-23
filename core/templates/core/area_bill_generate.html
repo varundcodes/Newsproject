@@ -1,32 +1,48 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
+
+<div class="page-title">
+    <div>
+        <h2>Area Bill</h2>
+        <p>Generate monthly bills area-wise</p>
+    </div>
+
+    <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+</div>
+
 <div class="card">
-    <h2>Area Wise Billing</h2>
+    <form method="GET" class="search-bar">
+        <div>
+            <label>Select Area</label>
+            <select name="area" required>
+                <option value="">Select Area</option>
+                {% for a in areas %}
+                    <option value="{{ a.id }}" {% if selected_area_id == a.id|stringformat:"s" %}selected{% endif %}>
+                        {{ a.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <form method="GET" style="margin-bottom:20px;">
-        <label><strong>Select Area</strong></label>
-        <select name="area" required>
-            <option value="">Select Area</option>
-            {% for area in areas %}
-                <option value="{{ area.id }}" {% if selected_area_id == area.id|stringformat:"s" %}selected{% endif %}>
-                    {{ area.name }}
-                </option>
-            {% endfor %}
-        </select>
+        <div>
+            <label>Select Month</label>
+            <select name="month" required>
+                <option value="">Select Month</option>
+                {% for value, label in month_choices %}
+                    <option value="{{ value }}" {% if month == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-        <label><strong>Select Month</strong></label>
-        <select name="month" required>
-            <option value="">Select Month</option>
-            {% for value, label in month_choices %}
-                <option value="{{ value }}" {% if month == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
+        <div>
+            <label>Year</label>
+            <input type="number" name="year" value="{{ year|default:'2026' }}" required>
+        </div>
 
-        <label><strong>Year</strong></label>
-        <input type="number" name="year" value="{{ year|default:'2026' }}" required>
-
-        <button class="btn" type="submit">Load Customers</button>
+        <div>
+            <button type="submit" class="btn">Load Customers</button>
+        </div>
     </form>
 </div>
 
@@ -40,39 +56,36 @@
         <input type="hidden" name="month" value="{{ month }}">
         <input type="hidden" name="year" value="{{ year }}">
 
-        <table>
-            <tr>
-                <th>Name</th>
-                <th>Phone</th>
-                <th>Newspaper</th>
-                <th>Additional Paper</th>
-                <th>Weekly Magazine</th>
-                <th>Monthly Magazine</th>
-                <th>WhatsApp</th>
-            </tr>
+        <div class="table-wrap">
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Total Preview</th>
+                    <th>WhatsApp</th>
+                </tr>
 
-            {% for customer in customers %}
-            <tr>
-                <td>{{ customer.name }}</td>
-                <td>{{ customer.phone }}</td>
-                <td>{% if customer.newspaper %}{{ customer.newspaper.name }}{% else %}-{% endif %}</td>
-                <td>{% if customer.additional_paper %}{{ customer.additional_paper.name }}{% else %}-{% endif %}</td>
-                <td>{% if customer.weekly_magazine %}{{ customer.weekly_magazine.name }}{% else %}-{% endif %}</td>
-                <td>{% if customer.monthly_magazine %}{{ customer.monthly_magazine.name }}{% else %}-{% endif %}</td>
-                <td>
-                    {% if month and year %}
-                        <a href="{{ customer.whatsapp_link }}" target="_blank">Send</a>
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
+                {% for c in customers %}
+                <tr>
+                    <td>{{ c.name }}</td>
+                    <td>{{ c.phone }}</td>
+                    <td>₹ {{ c.total_preview }}</td>
+                    <td>
+                        <a href="{{ c.whatsapp_link }}" target="_blank">Send</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
 
         <br>
-        <button class="btn" type="submit">Generate Bills for This Area</button>
+        <button type="submit" class="btn">Generate Area Bills</button>
     </form>
 </div>
+{% else %}
+<div class="card empty-box">
+    <p>Select area, month, and year to load customers</p>
+</div>
 {% endif %}
+
 {% endblock %}

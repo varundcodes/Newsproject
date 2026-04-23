@@ -1,0 +1,45 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="page-title">
+    <div>
+        <h2>Stop Customer</h2>
+        <p>Pause service for selected dates</p>
+    </div>
+
+    <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+</div>
+
+<div class="card">
+    <p><strong>Customer:</strong> {{ customer.name }}</p>
+    <p><strong>Phone:</strong> {{ customer.phone }}</p>
+    <p><strong>Area:</strong> {{ customer.area.name }}</p>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="form-row">
+            <div>
+                <label>Stop From</label>
+                {{ form.stop_start_date }}
+            </div>
+
+            <div>
+                <label>Stop To</label>
+                {{ form.stop_end_date }}
+            </div>
+        </div>
+
+        <div style="margin-top:15px;">
+            <label>Reason</label>
+            {{ form.stop_reason }}
+        </div>
+
+        <div style="margin-top:20px;">
+            <button type="submit" class="btn btn-warning">Save Stop Details</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

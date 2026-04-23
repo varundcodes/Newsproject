@@ -1,53 +1,88 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
-<div class="card">
-    <h2>Area Wise Payment History</h2>
 
-    <form method="GET" style="margin-bottom:20px;">
-        <label><strong>Select Area</strong></label>
-        <select name="area" onchange="this.form.submit()">
-            <option value="">All Areas</option>
-            {% for area in areas %}
-                <option value="{{ area.id }}" {% if selected_area_id == area.id|stringformat:"s" %}selected{% endif %}>
-                    {{ area.name }}
-                </option>
-            {% endfor %}
-        </select>
-    </form>
+<div class="page-title">
+    <div>
+        <h2>Payment History</h2>
+        <p>Filter payments and verify uploaded screenshots</p>
+    </div>
 
-    <table>
-        <tr>
-            <th>Customer</th>
-            <th>Phone</th>
-            <th>Area</th>
-            <th>Month</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Screenshot</th>
-        </tr>
-
-        {% for p in payments %}
-        <tr>
-            <td>{{ p.customer.name }}</td>
-            <td>{{ p.customer.phone }}</td>
-            <td>{{ p.customer.area.name }}</td>
-            <td>{{ p.bill.month }} {{ p.bill.year }}</td>
-            <td>₹ {{ p.amount }}</td>
-            <td>{{ p.status }}</td>
-            <td>
-                {% if p.screenshot %}
-                    <a href="{{ p.screenshot.url }}" target="_blank">View</a>
-                {% else %}
-                    -
-                {% endif %}
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="7">No payments found</td>
-        </tr>
-        {% endfor %}
-    </table>
+    <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
 </div>
+
+<div class="card">
+    <form method="GET" class="search-bar">
+        <div>
+            <label>Select Area</label>
+            <select name="area">
+                <option value="">Select Area</option>
+                {% for a in areas %}
+                    <option value="{{ a.id }}">{{ a.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label>Search</label>
+            <input type="text" name="search" placeholder="Search by name or phone">
+        </div>
+
+        <div>
+            <button type="submit" class="btn">Filter</button>
+        </div>
+    </form>
+</div>
+
+{% if payments %}
+<div class="card">
+    <div class="table-wrap">
+        <table>
+            <tr>
+                <th>Customer</th>
+                <th>Area</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Screenshot</th>
+                <th>Action</th>
+            </tr>
+
+            {% for p in payments %}
+            <tr>
+                <td>{{ p.customer.name }}</td>
+                <td>{{ p.customer.area.name }}</td>
+                <td>₹ {{ p.amount }}</td>
+                <td>
+                    {% if p.status == "Pending" %}
+                        <span class="badge badge-pending">Pending</span>
+                    {% elif p.status == "Verified" %}
+                        <span class="badge badge-verified">Verified</span>
+                    {% else %}
+                        <span class="badge badge-rejected">Rejected</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if p.screenshot %}
+                        <a href="{{ p.screenshot.url }}" target="_blank">View</a>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="actions">
+                        <a href="{% url 'verify_payment' p.id %}" class="btn btn-success">Verify</a>
+                        <a href="{% url 'reject_payment' p.id %}" class="btn btn-danger">Reject</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card empty-box">
+    <p>Select area or search to view payment history</p>
+</div>
+{% endif %}
+
 {% endblock %}

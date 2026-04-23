@@ -1,11 +1,32 @@
 {% extends 'core/base.html' %}
+
 {% block content %}
+
+<div class="page-title">
+    <div>
+        <h2>Add Newspaper</h2>
+        <p>Create newspaper and monthly price</p>
+    </div>
+
+    <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
+</div>
+
 <div class="card">
-    <h2>Add Newspaper</h2>
     <form method="POST">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button class="btn" type="submit">Save Newspaper</button>
+
+        <div style="margin-bottom:15px;">
+            <label>Newspaper Name</label>
+            {{ form.name }}
+        </div>
+
+        <div style="margin-bottom:15px;">
+            <label>Monthly Price</label>
+            {{ form.monthly_price }}
+        </div>
+
+        <button type="submit" class="btn">Save Newspaper</button>
     </form>
 </div>
+
 {% endblock %}
