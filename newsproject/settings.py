@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'core',
 ]
 
@@ -58,9 +59,7 @@ WSGI_APPLICATION = 'newsproject.wsgi.application'
 # =========================
 
 DATABASES = {
-    'default': dj_database_url.parse(
-        'postgresql://dealer_db_1uec_user:KPQoPRHdm9nio5XXbyETO69hr6Uo5apf@dpg-d7d0c1f7f7vs739kc6qg-a.virginia-postgres.render.com/dealer_db_1uec'
-    )
+    'default': dj_database_url.config(default=os.environ.get("DATABASE_URL"))
 }
 
 # =========================
