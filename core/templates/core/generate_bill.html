@@ -42,6 +42,22 @@
 
         <div>
             <button type="submit" class="btn">Generate Bill</button>
+            {% if generated_bill %}
+    <div style="margin-top:20px; padding:15px; background:#f0fdf4; border:1px solid #22c55e; border-radius:10px;">
+        <h3>Bill Generated Successfully ✅</h3>
+
+        <p><b>Customer:</b> {{ generated_bill.customer.name }}</p>
+        <p><b>Month:</b> {{ generated_bill.month }} {{ generated_bill.year }}</p>
+        <p><b>Total Amount:</b> ₹{{ generated_bill.total_amount }}</p>
+
+        {% if whatsapp_link %}
+            <a href="{{ whatsapp_link }}" target="_blank"
+               style="display:inline-block; background:#16a34a; color:white; padding:12px 18px; border-radius:8px; text-decoration:none;">
+                📲 Send Bill via WhatsApp
+            </a>
+        {% endif %}
+    </div>
+{% endif %}
         </div>
     </form>
 </div>

@@ -31,8 +31,7 @@ class AdditionalPaperAdmin(admin.ModelAdmin):
 
 @admin.register(WeeklyMagazine)
 class WeeklyMagazineAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'monthly_price']
-    search_fields = ['name']
+    list_display = ['name', 'weekly_price']
 
 
 @admin.register(MonthlyMagazine)

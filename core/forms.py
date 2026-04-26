@@ -53,15 +53,7 @@ class AdditionalPaperForm(forms.ModelForm):
 class WeeklyMagazineForm(forms.ModelForm):
     class Meta:
         model = WeeklyMagazine
-        fields = ["name", "monthly_price"]
-        widgets = {
-            "name": forms.TextInput(attrs={
-                "placeholder": "Enter weekly magazine name"
-            }),
-            "monthly_price": forms.NumberInput(attrs={
-                "placeholder": "Enter monthly price"
-            }),
-        }
+        fields = ['name', 'weekly_price']
 
 
 class MonthlyMagazineForm(forms.ModelForm):

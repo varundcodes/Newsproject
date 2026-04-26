@@ -2,13 +2,12 @@ from decimal import Decimal
 from datetime import date
 import calendar
 import urllib.parse
-
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Sum
 from django.shortcuts import get_object_or_404, redirect, render
+from django.conf import settings
 
 from .forms import AreaForm, NewspaperForm, CustomerForm, StopCustomerForm
 from .models import Customer, Area, Bill, Payment, MONTH_CHOICES
@@ -57,7 +56,7 @@ def admin_dashboard(request):
         count=Count('id')
     ).order_by('area__name')
 
-    return render(request, 'core/dashboard.html', {
+    return render(request, 'core/admin_dashboard.html', {
         'total_customers': total_customers,
         'total_areas': total_areas,
         'total_bills': total_bills,
@@ -266,7 +265,7 @@ def _calculate_amount(customer, month, year):
     weekly_magazine_amount = Decimal(str(
         customer.custom_weekly_price
         if customer.custom_weekly_price is not None
-        else (customer.weekly_magazine.monthly_price if customer.weekly_magazine else 0)
+        else (customer.weekly_magazine.weekly_price * 4 if customer.weekly_magazine else 0)
     ))
 
     monthly_magazine_amount = Decimal(str(
@@ -349,7 +348,7 @@ def area_bill_generate(request):
     areas = Area.objects.all().order_by('name')
     selected_area_id = request.GET.get('area') or request.POST.get('area')
     month = request.GET.get('month') or request.POST.get('month')
-    year = request.GET.get('year') or request.POST.get('year')
+    year = request.GET.get('year') or request.POST.get('year') or date.today().year
 
     customers = None
 
@@ -366,16 +365,8 @@ def area_bill_generate(request):
 
         for c in customers:
             amounts = _calculate_amount(c, month, year)
-            c.total_preview = amounts['total_amount']
 
-            message = f"Hello {c.name}, Your bill for {month} {year} is ₹{c.total_preview}"
-            encoded = urllib.parse.quote(message)
-            c.whatsapp_link = f"https://wa.me/91{c.phone}?text={encoded}"
-
-    if request.method == 'POST' and customers:
-        for c in customers:
-            amounts = _calculate_amount(c, month, year)
-            Bill.objects.get_or_create(
+            bill, created = Bill.objects.update_or_create(
                 customer=c,
                 month=month,
                 year=year,
@@ -389,8 +380,20 @@ def area_bill_generate(request):
                 }
             )
 
-        messages.success(request, "Area bills generated")
-        return redirect(f'/area-billing/?area={selected_area_id}&month={month}&year={year}')
+            message = f"""
+Hello {c.name},
+
+Your Newspaper Bill for {month} {year} is ₹{bill.total_amount}
+
+Pay using UPI:
+upi://pay?pa={settings.OWNER_UPI_ID}&pn={settings.OWNER_NAME}&am={bill.total_amount}
+
+Thank you 🙏
+"""
+
+            encoded = urllib.parse.quote(message)
+            c.whatsapp_link = f"https://wa.me/91{c.phone}?text={encoded}"
+            c.bill_amount = bill.total_amount
 
     return render(request, 'core/area_bill_generate.html', {
         'areas': areas,
@@ -460,38 +463,35 @@ def reject_payment(request, payment_id):
 
 
 def customer_login(request):
-    if request.user.is_authenticated:
-        if request.user.is_staff:
-            return redirect('admin_dashboard')
-        return redirect('customer_dashboard')
-
-    if request.method == 'POST':
-        phone = request.POST.get('phone', '').strip()
-        password = request.POST.get('password', '').strip()
+    if request.method == "POST":
+        phone = request.POST.get("phone")
+        password = request.POST.get("password")
 
         try:
             customer = Customer.objects.get(phone=phone)
+            user = customer.user
+        except Customer.DoesNotExist:
+            user = None
 
-            if not customer.user:
-                messages.error(request, "Customer account not linked.")
-                return redirect('customer_login')
-
-            user = authenticate(
-                request,
-                username=customer.user.username,
-                password=password
-            )
+        if user:
+            user = authenticate(request, username=user.username, password=password)
 
             if user is not None:
                 login(request, user)
-                return redirect('customer_dashboard')
-            else:
-                messages.error(request, "Invalid phone or password.")
+                return redirect("customer_dashboard")
 
-        except Customer.DoesNotExist:
-            messages.error(request, "Customer not found.")
+        return render(request, "core/customer_login.html", {
+            "error": "Invalid phone or password"
+        })
 
-    return render(request, 'core/customer_login.html')
+    return render(request, "core/customer_login.html")
+
+
+def customer_logout(request):
+    logout(request)
+    return redirect("customer_login")
+
+
 
 @login_required(login_url='/customer-login/')
 def customer_dashboard(request):
@@ -512,16 +512,13 @@ def customer_dashboard(request):
         )
 
     return render(request, 'core/customer_dashboard.html', {
-        'customer': customer,
-        'latest_bill': latest_bill,
-        'payments': payments,
-        'upi_link': upi_link,
-        'owner_upi_id': settings.OWNER_UPI_ID,
-        'owner_name': settings.OWNER_NAME,
-        'owner_phonepe_number': settings.OWNER_PHONEPE_NUMBER,
-        'owner_paytm_number': settings.OWNER_PAYTM_NUMBER,
-        'owner_gpay_number': settings.OWNER_GPAY_NUMBER,
-    })
+    'customer': customer,
+    'latest_bill': latest_bill,
+    'payments': payments,
+    'upi_link': upi_link,
+    'owner_upi': settings.OWNER_UPI_ID,
+    'owner_name': settings.OWNER_NAME,
+})
 
 
 
@@ -579,68 +576,74 @@ def generate_bill(request):
     if not request.user.is_staff:
         return redirect('customer_dashboard')
 
-    customers = Customer.objects.all().order_by('name')
+    customers = Customer.objects.all()
+    generated_bill = None
+    whatsapp_link = None
 
-    month_choices = [
-        ('Jan', 'January'),
-        ('Feb', 'February'),
-        ('Mar', 'March'),
-        ('Apr', 'April'),
-        ('May', 'May'),
-        ('Jun', 'June'),
-        ('Jul', 'July'),
-        ('Aug', 'August'),
-        ('Sep', 'September'),
-        ('Oct', 'October'),
-        ('Nov', 'November'),
-        ('Dec', 'December'),
-    ]
-
-    if request.method == 'POST':
+    if request.method == "POST":
         customer_id = request.POST.get('customer')
         month = request.POST.get('month')
         year = request.POST.get('year')
 
         customer = Customer.objects.get(id=customer_id)
 
-        # Simple calculation (you can improve later)
-        total = 0
+        # 🔥 Calculate amounts
+        amounts = _calculate_amount(customer, month, year)
 
-        if customer.custom_newspaper_price:
-            total += customer.custom_newspaper_price
-        elif customer.newspaper:
-            total += customer.newspaper.monthly_price
-
-        if customer.custom_additional_price:
-            total += customer.custom_additional_price
-        elif customer.additional_paper:
-            total += customer.additional_paper.monthly_price
-
-        if customer.custom_weekly_price:
-            total += customer.custom_weekly_price
-        elif customer.weekly_magazine:
-            total += customer.weekly_magazine.monthly_price
-
-        if customer.custom_monthly_price:
-            total += customer.custom_monthly_price
-        elif customer.monthly_magazine:
-            total += customer.monthly_magazine.monthly_price
-
-        Bill.objects.create(
+        # 🔥 Save or update bill
+        bill, created = Bill.objects.update_or_create(
             customer=customer,
             month=month,
             year=year,
-            newspaper_amount=customer.custom_newspaper_price or (customer.newspaper.monthly_price if customer.newspaper else 0),
-            additional_paper_amount=customer.custom_additional_price or (customer.additional_paper.monthly_price if customer.additional_paper else 0),
-            weekly_magazine_amount=customer.custom_weekly_price or (customer.weekly_magazine.monthly_price if customer.weekly_magazine else 0),
-            monthly_magazine_amount=customer.custom_monthly_price or (customer.monthly_magazine.monthly_price if customer.monthly_magazine else 0),
-            total_amount=total
+            defaults={
+                'newspaper_amount': amounts['newspaper_amount'],
+                'additional_paper_amount': amounts['additional_paper_amount'],
+                'weekly_magazine_amount': amounts['weekly_magazine_amount'],
+                'monthly_magazine_amount': amounts['monthly_magazine_amount'],
+                'total_amount': amounts['total_amount'],
+                'is_paid': False,
+            }
         )
 
-        messages.success(request, "Bill generated successfully")
-        return redirect('generate_bill')
+        generated_bill = bill
+
+        # 🔥 FINAL WHATSAPP MESSAGE
+        message = f"""
+Hello {customer.name},
+
+📰 Your Newspaper Bill for {month} {year}
+
+💰 Amount: ₹{bill.total_amount}
+
+👉 View & Pay Here:
+http://127.0.0.1:8000/customer-login/
+
+🔐 Login Details:
+Username: {customer.phone}
+Password: custo@12345
+
+Thank you 🙏
+"""
+
+        encoded_message = urllib.parse.quote(message)
+
+        whatsapp_link = f"https://wa.me/91{customer.phone}?text={encoded_message}"
 
     return render(request, 'core/generate_bill.html', {
         'customers': customers,
-        'month_choices': month_choices
+        'generated_bill': generated_bill,
+        'whatsapp_link': whatsapp_link,
+        'month_choices': MONTH_CHOICES
+    })
+
+    encoded_message = urllib.parse.quote(message)
+    whatsapp_link = f"https://wa.me/91{customer.phone}?text={encoded_message}"
+
+    messages.success(request, "Bill generated successfully")
+
+    return render(request, 'core/generate_bill.html', {
+        'customers': customers,
+        'month_choices': MONTH_CHOICES,
+        'generated_bill': generated_bill,
+        'whatsapp_link': whatsapp_link,
     })

@@ -4,21 +4,14 @@ from datetime import date
 
 
 MONTH_CHOICES = [
-    ('Jan', 'January'),
-    ('Feb', 'February'),
-    ('Mar', 'March'),
-    ('Apr', 'April'),
-    ('May', 'May'),
-    ('Jun', 'June'),
-    ('Jul', 'July'),
-    ('Aug', 'August'),
-    ('Sep', 'September'),
-    ('Oct', 'October'),
-    ('Nov', 'November'),
-    ('Dec', 'December'),
+    ('Jan', 'January'), ('Feb', 'February'), ('Mar', 'March'),
+    ('Apr', 'April'), ('May', 'May'), ('Jun', 'June'),
+    ('Jul', 'July'), ('Aug', 'August'), ('Sep', 'September'),
+    ('Oct', 'October'), ('Nov', 'November'), ('Dec', 'December'),
 ]
 
 
+# ---------------- AREA ----------------
 class Area(models.Model):
     name = models.CharField(max_length=100)
 
@@ -26,6 +19,7 @@ class Area(models.Model):
         return self.name
 
 
+# ---------------- NEWSPAPER ----------------
 class Newspaper(models.Model):
     name = models.CharField(max_length=100)
     monthly_price = models.FloatField()
@@ -34,6 +28,7 @@ class Newspaper(models.Model):
         return self.name
 
 
+# ---------------- ADDITIONAL PAPER ----------------
 class AdditionalPaper(models.Model):
     name = models.CharField(max_length=100)
     monthly_price = models.FloatField()
@@ -42,14 +37,16 @@ class AdditionalPaper(models.Model):
         return self.name
 
 
+# ---------------- WEEKLY MAGAZINE ----------------
 class WeeklyMagazine(models.Model):
     name = models.CharField(max_length=100)
-    monthly_price = models.FloatField()
+    weekly_price = models.FloatField()  # ✅ changed
 
     def __str__(self):
         return self.name
 
 
+# ---------------- MONTHLY MAGAZINE ----------------
 class MonthlyMagazine(models.Model):
     name = models.CharField(max_length=100)
     monthly_price = models.FloatField()
@@ -58,6 +55,7 @@ class MonthlyMagazine(models.Model):
         return self.name
 
 
+# ---------------- CUSTOMER ----------------
 class Customer(models.Model):
     STATUS_CHOICES = [
         ('Active', 'Active'),
@@ -94,13 +92,20 @@ class Customer(models.Model):
     def __str__(self):
         return self.name
 
+    # ✅ FIXED SAVE METHOD (NO DUPLICATE USER ERROR)
     def save(self, *args, **kwargs):
         if not self.user:
-            user, created = User.objects.get_or_create(username=self.phone)
+            user, created = User.objects.get_or_create(
+                username=self.phone,
+                defaults={"email": ""}
+            )
+
             if created:
-                user.set_password(self.phone)
+                user.set_password("custo@12345")
                 user.save()
+
             self.user = user
+
         super().save(*args, **kwargs)
 
     def is_stopped_today(self):
@@ -110,6 +115,7 @@ class Customer(models.Model):
         return False
 
 
+# ---------------- BILL ----------------
 class Bill(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     month = models.CharField(max_length=3, choices=MONTH_CHOICES)
@@ -125,6 +131,9 @@ class Bill(models.Model):
     is_paid = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = ('customer', 'month', 'year')
+
     def __str__(self):
         return f"{self.customer.name} - {self.month} {self.year}"
 
@@ -132,43 +141,47 @@ class Bill(models.Model):
         customer = self.customer
 
         if customer.is_stopped_today():
-            self.newspaper_amount = 0
-            self.additional_paper_amount = 0
-            self.weekly_magazine_amount = 0
-            self.monthly_magazine_amount = 0
             self.total_amount = 0
             return
 
-        newspaper_amount = 0
-        additional_amount = 0
-        weekly_amount = 0
-        monthly_amount = 0
+        newspaper = (
+            customer.custom_newspaper_price
+            if customer.custom_newspaper_price is not None
+            else (customer.newspaper.monthly_price if customer.newspaper else 0)
+        )
 
-        if customer.newspaper:
-            newspaper_amount = customer.custom_newspaper_price or customer.newspaper.monthly_price
+        additional = (
+            customer.custom_additional_price
+            if customer.custom_additional_price is not None
+            else (customer.additional_paper.monthly_price if customer.additional_paper else 0)
+        )
 
-        if customer.additional_paper:
-            additional_amount = customer.custom_additional_price or customer.additional_paper.monthly_price
+        # ✅ WEEKLY LOGIC
+        weeks = 4
+        weekly = (
+            customer.custom_weekly_price
+            if customer.custom_weekly_price is not None
+            else (customer.weekly_magazine.weekly_price * weeks if customer.weekly_magazine else 0)
+        )
 
-        if customer.weekly_magazine:
-            weekly_amount = customer.custom_weekly_price or customer.weekly_magazine.monthly_price
+        monthly = (
+            customer.custom_monthly_price
+            if customer.custom_monthly_price is not None
+            else (customer.monthly_magazine.monthly_price if customer.monthly_magazine else 0)
+        )
 
-        if customer.monthly_magazine:
-            monthly_amount = customer.custom_monthly_price or customer.monthly_magazine.monthly_price
-
-        total = newspaper_amount + additional_amount + weekly_amount + monthly_amount
-
-        self.newspaper_amount = newspaper_amount
-        self.additional_paper_amount = additional_amount
-        self.weekly_magazine_amount = weekly_amount
-        self.monthly_magazine_amount = monthly_amount
-        self.total_amount = total
+        self.newspaper_amount = newspaper
+        self.additional_paper_amount = additional
+        self.weekly_magazine_amount = weekly
+        self.monthly_magazine_amount = monthly
+        self.total_amount = newspaper + additional + weekly + monthly
 
     def save(self, *args, **kwargs):
         self.calculate_amount()
         super().save(*args, **kwargs)
 
 
+# ---------------- PAYMENT ----------------
 class Payment(models.Model):
     STATUS_CHOICES = [
         ('Pending', 'Pending'),
@@ -181,7 +194,7 @@ class Payment(models.Model):
 
     amount = models.FloatField()
     screenshot = models.ImageField(upload_to='payments/', null=True, blank=True)
-    
+
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Pending')
     date = models.DateTimeField(auto_now_add=True)
 
