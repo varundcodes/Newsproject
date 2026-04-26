@@ -131,9 +131,7 @@ class Bill(models.Model):
     is_paid = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        unique_together = ('customer', 'month', 'year')
-
+    
     def __str__(self):
         return f"{self.customer.name} - {self.month} {self.year}"
 
