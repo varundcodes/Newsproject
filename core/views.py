@@ -506,6 +506,8 @@ def customer_dashboard(request):
     payments = Payment.objects.filter(customer=customer).order_by('-date')
 
     upi_link = ""
+    qr_base64 = None
+
     if latest_bill:
         upi_link = (
             f"upi://pay?pa={settings.OWNER_UPI_ID}"
@@ -513,31 +515,26 @@ def customer_dashboard(request):
             f"&am={latest_bill.total_amount}"
             f"&cu=INR"
         )
-def generate_qr(upi_id, name, amount):
-    upi_url = f"upi://pay?pa={upi_id}&pn={name}&am={amount}"
-    
-    qr = qrcode.make(upi_url)
-    
-    buffer = BytesIO()
-    qr.save(buffer, format='PNG')
-    
-    return buffer.getvalue()
 
+        qr_image = generate_qr(
+            settings.OWNER_UPI_ID,
+            settings.OWNER_NAME,
+            latest_bill.total_amount
+        )
+
+        import base64
+        qr_base64 = base64.b64encode(qr_image).decode()
+
+    # ✅ ALWAYS RETURN (outside if)
     return render(request, 'core/customer_dashboard.html', {
-    'customer': customer,
-    'latest_bill': latest_bill,
-    'owner_upi': settings.OWNER_UPI_ID,
-    'owner_name': settings.OWNER_NAME,
-    'qr_code': qr_base64,
-})
-
-
-
-@login_required(login_url='/customer-login/')
-def customer_logout(request):
-    logout(request)
-    return redirect('customer_login')
-
+        'customer': customer,
+        'latest_bill': latest_bill,
+        'payments': payments,
+        'upi_link': upi_link,
+        'owner_upi': settings.OWNER_UPI_ID,
+        'owner_name': settings.OWNER_NAME,
+        'qr_code': qr_base64,
+    })
 
 
 @login_required(login_url='/customer-login/')
@@ -658,3 +655,13 @@ Thank you 🙏
         'generated_bill': generated_bill,
         'whatsapp_link': whatsapp_link,
     })
+
+def generate_qr(upi_id, name, amount):
+    upi_url = f"upi://pay?pa={upi_id}&pn={name}&am={amount}"
+    
+    qr = qrcode.make(upi_url)
+    
+    buffer = BytesIO()
+    qr.save(buffer, format='PNG')
+    
+    return buffer.getvalue()
