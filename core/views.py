@@ -476,28 +476,22 @@ def reject_payment(request, payment_id):
 
 
 def customer_login(request):
-    if request.method == "POST":
-        phone = request.POST.get("phone")
-        password = request.POST.get("password")
+    if request.method == 'POST':
+        phone = request.POST.get('phone')
+        password = request.POST.get('password')
 
-        try:
-            customer = Customer.objects.get(phone=phone)
-            user = customer.user
-        except Customer.DoesNotExist:
-            user = None
+        # ✅ Authenticate properly
+        user = authenticate(request, username=phone, password=password)
 
-        if user:
-            user = authenticate(request, username=user.username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('customer_dashboard')
+        else:
+            return render(request, 'core/customer_login.html', {
+                'error': 'Invalid phone or password'
+            })
 
-            if user is not None:
-                login(request, user)
-                return redirect("customer_dashboard")
-
-        return render(request, "core/customer_login.html", {
-            "error": "Invalid phone or password"
-        })
-
-    return render(request, "core/customer_login.html")
+    return render(request, 'core/customer_login.html')
 
 
 def customer_logout(request):
