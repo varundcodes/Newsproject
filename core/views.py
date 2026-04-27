@@ -1,6 +1,7 @@
 from decimal import Decimal
 from datetime import date
 import calendar
+import base64
 import urllib.parse
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -8,7 +9,9 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.conf import settings
-
+import qrcode
+from io import BytesIO
+from django.core.files.base import ContentFile
 from .forms import AreaForm, NewspaperForm, CustomerForm, StopCustomerForm
 from .models import Customer, Area, Bill, Payment, MONTH_CHOICES
 
@@ -510,14 +513,22 @@ def customer_dashboard(request):
             f"&am={latest_bill.total_amount}"
             f"&cu=INR"
         )
+def generate_qr(upi_id, name, amount):
+    upi_url = f"upi://pay?pa={upi_id}&pn={name}&am={amount}"
+    
+    qr = qrcode.make(upi_url)
+    
+    buffer = BytesIO()
+    qr.save(buffer, format='PNG')
+    
+    return buffer.getvalue()
 
     return render(request, 'core/customer_dashboard.html', {
     'customer': customer,
     'latest_bill': latest_bill,
-    'payments': payments,
-    'upi_link': upi_link,
     'owner_upi': settings.OWNER_UPI_ID,
     'owner_name': settings.OWNER_NAME,
+    'qr_code': qr_base64,
 })
 
 
