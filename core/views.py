@@ -14,7 +14,17 @@ from io import BytesIO
 from django.core.files.base import ContentFile
 from .forms import AreaForm, NewspaperForm, CustomerForm, StopCustomerForm
 from .models import Customer, Area, Bill, Payment, MONTH_CHOICES
+import base64 
 
+def generate_qr(upi_id, name, amount):
+    upi_url = f"upi://pay?pa={upi_id}&pn={name}&am={amount}"
+    
+    qr = qrcode.make(upi_url)
+    
+    buffer = BytesIO()
+    qr.save(buffer, format='PNG')
+    
+    return buffer.getvalue()
 
 def admin_login(request):
     if request.user.is_authenticated:
@@ -503,18 +513,11 @@ def customer_dashboard(request):
 
     customer = get_object_or_404(Customer, user=request.user)
     latest_bill = Bill.objects.filter(customer=customer).order_by('-created_at').first()
-    payments = Payment.objects.filter(customer=customer).order_by('-date')
 
-    upi_link = ""
-    qr_base64 = None
+    qr_code = None
 
     if latest_bill:
-        upi_link = (
-            f"upi://pay?pa={settings.OWNER_UPI_ID}"
-            f"&pn={settings.OWNER_NAME}"
-            f"&am={latest_bill.total_amount}"
-            f"&cu=INR"
-        )
+        import base64
 
         qr_image = generate_qr(
             settings.OWNER_UPI_ID,
@@ -522,18 +525,14 @@ def customer_dashboard(request):
             latest_bill.total_amount
         )
 
-        import base64
-        qr_base64 = base64.b64encode(qr_image).decode()
+        qr_code = base64.b64encode(qr_image).decode()
 
-    # ✅ ALWAYS RETURN (outside if)
     return render(request, 'core/customer_dashboard.html', {
         'customer': customer,
         'latest_bill': latest_bill,
-        'payments': payments,
-        'upi_link': upi_link,
         'owner_upi': settings.OWNER_UPI_ID,
         'owner_name': settings.OWNER_NAME,
-        'qr_code': qr_base64,
+        'qr_code': qr_code,
     })
 
 
@@ -656,12 +655,3 @@ Thank you 🙏
         'whatsapp_link': whatsapp_link,
     })
 
-def generate_qr(upi_id, name, amount):
-    upi_url = f"upi://pay?pa={upi_id}&pn={name}&am={amount}"
-    
-    qr = qrcode.make(upi_url)
-    
-    buffer = BytesIO()
-    qr.save(buffer, format='PNG')
-    
-    return buffer.getvalue()

@@ -1,17 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Customer Bill</title>
+    <title>Customer Dashboard</title>
 
     <style>
         body {
             font-family: Arial;
             background: #f3f4f6;
-            margin: 0;
             padding: 20px;
         }
 
-        .bill {
+        .card {
             max-width: 420px;
             margin: auto;
             background: white;
@@ -21,10 +20,6 @@
             text-align: center;
         }
 
-        h2 {
-            margin-bottom: 5px;
-        }
-
         .line {
             border-top: 1px dashed #ccc;
             margin: 15px 0;
@@ -32,83 +27,120 @@
 
         .amount {
             font-size: 28px;
-            font-weight: bold;
             color: #dc2626;
+            font-weight: bold;
         }
 
         .btn {
             display: block;
-            margin-top: 15px;
+            margin-top: 12px;
             padding: 12px;
             background: #16a34a;
             color: white;
             text-decoration: none;
             border-radius: 8px;
-            font-weight: bold;
         }
 
-        img {
-            margin-top: 15px;
+        .btn-upload {
+            background: #2563eb;
         }
 
         .status {
+            margin-top: 10px;
             font-weight: bold;
         }
 
-        .paid {
-            color: green;
-        }
-
-        .pending {
-            color: red;
-        }
+        .paid { color: green; }
+        .pending { color: red; }
 
         .logout {
-            display: block;
             margin-top: 20px;
+            display: block;
             color: red;
-            text-decoration: none;
+        }
+
+        .payment-box {
+            text-align: left;
+            margin-top: 15px;
         }
     </style>
-
 </head>
 
 <body>
 
-<div class="bill">
+<div class="card">
 
     <h2>📰 Pradeep News Agency</h2>
 
     <p><b>{{ customer.name }}</b></p>
-    <p>{{ latest_bill.month }} {{ latest_bill.year }}</p>
 
-    <div class="line"></div>
+    {% if latest_bill %}
 
-    <p>Total Amount</p>
-    <div class="amount">₹{{ latest_bill.total_amount }}</div>
+        <p>{{ latest_bill.month }} {{ latest_bill.year }}</p>
 
-    <div class="line"></div>
+        <div class="line"></div>
 
-    <!-- UPI BUTTON -->
-    <a href="upi://pay?pa={{ owner_upi }}&pn={{ owner_name }}&am={{ latest_bill.total_amount }}" class="btn">
-        Pay via UPI (GPay / PhonePe)
-    </a>
+        <p>Total Amount</p>
+        <div class="amount">₹{{ latest_bill.total_amount }}</div>
 
-    <p><b>👉 Recommended: Scan QR to Pay</b></p>
+        <div class="line"></div>
 
-    <!-- DYNAMIC QR -->
-    <img src="data:image/png;base64,{{ qr_code }}" width="200">
+        <!-- UPI -->
+        <a href="upi://pay?pa={{ owner_upi }}&pn={{ owner_name }}&am={{ latest_bill.total_amount }}&cu=INR"
+           class="btn">
+           Pay via UPI
+        </a>
 
-    <div class="line"></div>
+        <p style="font-size:12px;">Use mobile or scan QR</p>
 
-    <p class="status">
-        Status:
-        {% if latest_bill.is_paid %}
-            <span class="paid">✅ Paid</span>
-        {% else %}
-            <span class="pending">❌ Pending</span>
+        <!-- QR -->
+        {% if qr_code %}
+            <img src="data:image/png;base64,{{ qr_code }}" width="200">
         {% endif %}
-    </p>
+
+        <div class="line"></div>
+
+        <!-- UPLOAD PAYMENT -->
+        {% if not latest_bill.is_paid %}
+            <a href="{% url 'upload_payment' latest_bill.id %}" class="btn btn-upload">
+                Upload Payment Screenshot
+            </a>
+        {% endif %}
+
+        <!-- STATUS -->
+        <p class="status">
+            Status:
+            {% if latest_bill.is_paid %}
+                <span class="paid">✅ Paid</span>
+            {% else %}
+                <span class="pending">❌ Pending</span>
+            {% endif %}
+        </p>
+
+        <div class="line"></div>
+
+        <!-- PAYMENT HISTORY -->
+        <div class="payment-box">
+            <h4>Payment History</h4>
+
+            {% for p in payments %}
+                <p>
+                    ₹{{ p.amount }} - {{ p.status }}
+                    {% if p.screenshot %}
+                        <br>
+                        <a href="{{ p.screenshot.url }}" target="_blank">View</a>
+                    {% endif %}
+                </p>
+            {% empty %}
+                <p>No payments yet</p>
+            {% endfor %}
+        </div>
+
+    {% else %}
+
+        <p>No bill generated yet</p>
+
+    {% endif %}
 
     <a href="{% url 'customer_logout' %}" class="logout">Logout</a>
 
