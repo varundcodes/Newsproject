@@ -485,25 +485,25 @@ def customer_login(request):
 
         if customer and password == "custo@12345":
             request.session['customer_id'] = customer.id
-            return redirect('customer_dashboard')
+            return redirect('/customer-dashboard/')
 
     return render(request, 'core/customer_login.html')
 
-
 def customer_logout(request):
     logout(request)
-    return redirect("customer_login")
+    return redirect('/customer-login/')
 
 
 
-@login_required(login_url='/customer-login/')
 def customer_dashboard(request):
-    if request.user.is_staff:
-        return redirect('admin_dashboard')
+    customer_id = request.session.get('customer_id')
 
-    customer = get_object_or_404(Customer, user=request.user)
+    if not customer_id:
+        return redirect('/customer-login/')
+
+    customer = get_object_or_404(Customer, id=customer_id)
+
     latest_bill = Bill.objects.filter(customer=customer).order_by('-id').first()
-
 
     qr_code = None
 
@@ -518,13 +518,14 @@ def customer_dashboard(request):
 
         qr_code = base64.b64encode(qr_image).decode()
 
-    return render(request, 'core/customer_dashboard.html', {
+    return render(request, 'core/customer-dashboard.html', {
         'customer': customer,
         'latest_bill': latest_bill,
         'owner_upi': settings.OWNER_UPI_ID,
         'owner_name': settings.OWNER_NAME,
         'qr_code': qr_code,
     })
+
 
 
 @login_required(login_url='/customer-login/')
