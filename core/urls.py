@@ -29,5 +29,6 @@ urlpatterns = [
     path('verify-payment/<int:payment_id>/', views.verify_payment, name='verify_payment'),
 
     path("payments/reject/<int:payment_id>/", views.reject_payment, name="reject_payment"),
-    path("upload-payment/<int:bill_id>/", views)
+    path("upload-payment/<int:bill_id>/", views.upload_payment, name='upload_payment'),
+
 ]
