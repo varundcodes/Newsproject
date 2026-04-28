@@ -13,6 +13,7 @@ urlpatterns = [
     path("add-customer/", views.add_customer, name="add_customer"),
 
     # Customers
+    path('customer-login/', views.customer_login, name='customer_login'),
     path("customers/", views.customer_list, name="customer_list"),
     path("area-customers/", views.area_customer_list, name="area_customer_list"),
     path("customers/activate/<int:customer_id>/", views.activate_customer, name="activate_customer"),
@@ -27,7 +28,6 @@ urlpatterns = [
     # Payments
     path("payment-history/", views.area_payment_history, name="payment_history"),
     path('verify-payment/<int:payment_id>/', views.verify_payment, name='verify_payment'),
-
     path("payments/reject/<int:payment_id>/", views.reject_payment, name="reject_payment"),
     path("upload-payment/<int:bill_id>/", views.upload_payment, name='upload_payment'),
 
