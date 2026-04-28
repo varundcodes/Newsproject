@@ -14,6 +14,8 @@ urlpatterns = [
 
     # Customers
     path('customer-login/', views.customer_login, name='customer_login'),
+    path('customer-dashboard/', views.customer_dashboard, name='customer_dashboard'),
+
     path("customers/", views.customer_list, name="customer_list"),
     path("area-customers/", views.area_customer_list, name="area_customer_list"),
     path("customers/activate/<int:customer_id>/", views.activate_customer, name="activate_customer"),
