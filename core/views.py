@@ -451,6 +451,7 @@ def area_payment_history(request):
 
 @login_required(login_url='/')
 def verify_payment(request, payment_id):
+    print("VERIFY VIEW HIT")  
     if not request.user.is_staff:
         return redirect('customer_dashboard')
 
@@ -506,7 +507,8 @@ def customer_dashboard(request):
         return redirect('admin_dashboard')
 
     customer = get_object_or_404(Customer, user=request.user)
-    latest_bill = Bill.objects.filter(customer=customer).order_by('-created_at').first()
+    latest_bill = Bill.objects.filter(customer=customer).order_by('-id').first()
+
 
     qr_code = None
 
