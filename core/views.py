@@ -545,7 +545,7 @@ def customer_dashboard(request):
         bill.qr_code = qr_base64
         bill.upi_link = upi_link
 
-    return render(request, 'core/customer_dashboard.html', {
+    return render(request, 'core/customer-dashboard.html', {
         'customer': customer,
         'bills': bills
     })
