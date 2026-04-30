@@ -528,10 +528,24 @@ def customer_dashboard(request):
         return redirect('/customer-login/')
 
     customer = Customer.objects.get(id=customer_id)
-
     bills = Bill.objects.filter(customer=customer)
 
-    return render(request, 'core/customer-dashboard.html', {
+
+    for bill in bills:
+
+        upi_link = f"upi://pay?pa={settings.OWNER_UPI_ID}&pn={settings.OWNER_NAME}&am={bill.total_amount}"
+
+        qr = qrcode.make(upi_link)
+
+        buffer = BytesIO()
+        qr.save(buffer, format="PNG")
+
+        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+        bill.qr_code = qr_base64
+        bill.upi_link = upi_link
+
+    return render(request, 'core/customer_dashboard.html', {
         'customer': customer,
         'bills': bills
     })
