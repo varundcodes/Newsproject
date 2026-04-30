@@ -951,3 +951,7 @@ def uploaded_payments(request):
     return render(request, 'core/uploaded_payments.html', {
         'payments': payments
     })
+
+
+def home(request):
+    return render(request, "core/home.html")
