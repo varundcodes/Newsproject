@@ -531,7 +531,7 @@ def customer_dashboard(request):
 
     bills = Bill.objects.filter(customer=customer)
 
-    return render(request, 'core/customer_dashboard.html', {
+    return render(request, 'core/customer-dashboard.html', {
         'customer': customer,
         'bills': bills
     })
