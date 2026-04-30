@@ -521,33 +521,19 @@ def customer_logout(request):
 
 
 def customer_dashboard(request):
-    if not request.user.is_authenticated:
-        return redirect("customer_login")
 
-    customer = Customer.objects.get(user=request.user)
-    bills = Bill.objects.filter(customer=customer).order_by("-year", "-month")
+    customer_id = request.session.get('customer_id')
 
-    import qrcode
-    from io import BytesIO
-    import base64
-    from django.conf import settings
+    if not customer_id:
+        return redirect('/customer-login/')
 
-    for bill in bills:
-        upi_link = f"upi://pay?pa={settings.OWNER_UPI_ID}&pn={settings.OWNER_NAME}&am={bill.total_amount}"
+    customer = Customer.objects.get(id=customer_id)
 
-        qr = qrcode.make(upi_link)
+    bills = Bill.objects.filter(customer=customer)
 
-        buffer = BytesIO()
-        qr.save(buffer, format="PNG")
-
-        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
-
-        bill.qr_code = qr_base64
-        bill.upi_link = upi_link
-
-    return render(request, "core/customer_dashboard.html", {
-        "customer": customer,
-        "bills": bills
+    return render(request, 'core/customer_dashboard.html', {
+        'customer': customer,
+        'bills': bills
     })
 
 
