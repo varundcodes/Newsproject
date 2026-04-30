@@ -512,29 +512,34 @@ def customer_logout(request):
 
 
 def customer_dashboard(request):
-    customer_id = request.session.get('customer_id')
+    if not request.user.is_authenticated:
+        return redirect("customer_login")
 
-    if not customer_id:
-        return redirect('/customer-login/')
+    customer = Customer.objects.get(user=request.user)
+    bills = Bill.objects.filter(customer=customer).order_by("-year", "-month")
 
-    customer = get_object_or_404(Customer, id=customer_id)
-
-    bills = Bill.objects.filter(customer=customer).order_by('-id')
+    import qrcode
+    from io import BytesIO
+    import base64
+    from django.conf import settings
 
     for bill in bills:
+        upi_link = f"upi://pay?pa={settings.OWNER_UPI_ID}&pn={settings.OWNER_NAME}&am={bill.total_amount}"
 
-      upi_link = f"upi://pay?pa={settings.OWNER_UPI_ID}&pn={settings.OWNER_NAME}&am={bill.total_amount}"
+        qr = qrcode.make(upi_link)
 
-    # Generate QR
-    qr = qrcode.make(upi_link)
+        buffer = BytesIO()
+        qr.save(buffer, format="PNG")
 
-    buffer = BytesIO()
-    qr.save(buffer, format="PNG")
+        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
 
-    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+        bill.qr_code = qr_base64
+        bill.upi_link = upi_link
 
-    bill.qr_code = qr_base64
-    bill.upi_link = upi_link
+    return render(request, "core/customer_dashboard.html", {
+        "customer": customer,
+        "bills": bills
+    })
 
 
 
