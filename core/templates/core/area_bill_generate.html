@@ -1,92 +1,12 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Area Billing</title>
+{% extends 'core/base.html' %}
 
-    <style>
-        body {
-            font-family: Arial;
-            background: #f3f4f6;
-            margin: 0;
-            padding: 20px;
-        }
+{% block content %}
 
-        .container {
-            max-width: 850px;
-            margin: auto;
-            background: white;
-            padding: 25px;
-            border-radius: 14px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-        }
+<h2>📊 Area Wise Billing</h2>
 
-        h2 {
-            text-align: center;
-        }
-
-        select, input, button {
-            padding: 10px;
-            margin: 8px 5px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            font-size: 15px;
-        }
-
-        button {
-            background: #2563eb;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-
-        .send-all {
-            background: #16a34a;
-            color: white;
-            padding: 12px 18px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .card {
-            border: 1px solid #ddd;
-            padding: 15px;
-            margin: 12px 0;
-            border-radius: 10px;
-            background: #fafafa;
-        }
-
-        .btn {
-            display: inline-block;
-            background: green;
-            color: white;
-            padding: 9px 14px;
-            text-decoration: none;
-            border-radius: 6px;
-            margin-top: 10px;
-        }
-
-        .back {
-            display: block;
-            margin-top: 25px;
-            text-align: center;
-            font-size: 18px;
-        }
-    </style>
-
-</head>
-
-<body>
-
-<div class="container">
-
-    <h2>📊 Area Wise Billing</h2>
-
-    <!-- FILTER FORM -->
+<div class="card">
     <form method="get">
-        <select name="area" required>
+        <select name="area" required style="padding:10px; border-radius:6px; border:1px solid #ccc;">
             <option value="">Select Area</option>
             {% for area in areas %}
                 <option value="{{ area.id }}" {% if selected_area_id == area.id|stringformat:"s" %}selected{% endif %}>
@@ -95,7 +15,7 @@
             {% endfor %}
         </select>
 
-        <select name="month" required>
+        <select name="month" required style="padding:10px; border-radius:6px; border:1px solid #ccc;">
             <option value="">Select Month</option>
             {% for code, name in month_choices %}
                 <option value="{{ code }}" {% if month == code %}selected{% endif %}>
@@ -104,53 +24,67 @@
             {% endfor %}
         </select>
 
-        <input type="number" name="year" value="{{ year }}" required>
+        <input type="number" name="year" value="{{ year }}" required
+               style="padding:10px; border-radius:6px; border:1px solid #ccc;">
 
-        <button type="submit">Generate Bills</button>
+        <button type="submit" class="btn btn-blue">Generate Bills</button>
     </form>
-
-    <hr>
-
-    {% if customers %}
-
-        <h3>Customers</h3>
-
-        <!-- ✅ BULK SEND (TWILIO) -->
-        <form method="POST" action="{% url 'bulk_send_invoice' %}">
-            {% csrf_token %}
-
-            <input type="hidden" name="area" value="{{ selected_area_id }}">
-            <input type="hidden" name="month" value="{{ month }}">
-            <input type="hidden" name="year" value="{{ year }}">
-
-            <button type="submit" class="send-all">
-                📤 Send All Invoice Images via WhatsApp
-            </button>
-        </form>
-
-        <!-- CUSTOMER LIST -->
-        {% for c in customers %}
-            <div class="card">
-                <b>{{ c.name }}</b><br>
-                📞 {{ c.phone }}<br>
-                💰 Amount: ₹{{ c.bill_amount }}<br>
-
-                <!-- Manual WhatsApp -->
-                <a href="{{ c.whatsapp_link }}" target="_blank" class="btn">
-                    📲 Send WhatsApp
-                </a>
-            </div>
-        {% endfor %}
-
-    {% else %}
-
-        <p>Select area, month and year to generate bills.</p>
-
-    {% endif %}
-
-    <a href="{% url 'admin_dashboard' %}" class="back">⬅ Back to Dashboard</a>
-
 </div>
 
-</body>
-</html>
+{% if customers %}
+
+<div class="card">
+    <h3>Customers</h3>
+
+    <button onclick="sendAll()" class="btn btn-green">
+        🚀 Send All Bills via WhatsApp
+    </button>
+
+    <br><br>
+
+    {% for c in customers %}
+        <div class="card" style="background:#f9fafb;">
+            <b>{{ c.name }}</b><br>
+            📞 {{ c.phone }}<br>
+            💰 Amount: ₹{{ c.bill_amount }}<br>
+
+            <a href="{{ c.whatsapp_link }}" target="_blank" class="btn btn-green whatsapp-link">
+                📲 Send WhatsApp
+            </a>
+        </div>
+    {% endfor %}
+</div>
+
+{% else %}
+
+<div class="card">
+    <p>Select area, month and year to generate bills.</p>
+</div>
+
+{% endif %}
+
+<script>
+function sendAll() {
+    const links = document.querySelectorAll(".whatsapp-link");
+
+    if (links.length === 0) {
+        alert("No customers found!");
+        return;
+    }
+
+    let i = 0;
+
+    function openNext() {
+        if (i >= links.length) return;
+
+        window.open(links[i].href, "_blank");
+        i++;
+
+        setTimeout(openNext, 5000);
+    }
+
+    openNext();
+}
+</script>
+
+{% endblock %}

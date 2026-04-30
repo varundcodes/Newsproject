@@ -1,164 +1,66 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Admin Dashboard</title>
+{% extends 'core/base.html' %}
 
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial;
-            background: #f3f4f6;
-        }
+{% block content %}
 
-        .header {
-            background: #1e293b;
-            color: white;
-            padding: 18px;
-            text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-        }
+<h2>📊 Admin Dashboard</h2>
 
-        .container {
-            width: 95%;
-            max-width: 1200px;
-            margin: 30px auto;
-        }
+<!-- STATS -->
+<div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;">
 
-        .cards {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-bottom: 25px;
-        }
+    <div class="card" style="flex:1; min-width:180px; text-align:center;">
+        <h1>{{ total_customers }}</h1>
+        <p>Total Customers</p>
+    </div>
 
-        .card {
-            flex: 1;
-            min-width: 200px;
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
+    <div class="card" style="flex:1; min-width:180px; text-align:center;">
+        <h1>{{ total_areas }}</h1>
+        <p>Total Areas</p>
+    </div>
 
-        .card h3 {
-            margin: 0;
-            font-size: 28px;
-        }
+    <div class="card" style="flex:1; min-width:180px; text-align:center;">
+        <h1>{{ total_bills }}</h1>
+        <p>Total Bills</p>
+    </div>
 
-        .buttons {
-            margin-bottom: 20px;
-        }
+    <div class="card" style="flex:1; min-width:180px; text-align:center;">
+        <h1>₹{{ total_collection }}</h1>
+        <p>Total Collection</p>
+    </div>
 
-        .btn {
-            display: inline-block;
-            padding: 12px 18px;
-            margin: 6px;
-            border-radius: 8px;
-            text-decoration: none;
-            color: white;
-        }
-
-        .blue { background: #2563eb; }
-        .green { background: #16a34a; }
-        .purple { background: #7c3aed; }
-        .red { background: #dc2626; }
-
-        table {
-            width: 100%;
-            background: white;
-            border-collapse: collapse;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        th, td {
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
-            text-align: left;
-        }
-
-        th {
-            background: #1e293b;
-            color: white;
-        }
-
-    </style>
-</head>
-
-<body>
-
-<div class="header">
-    Admin Dashboard
 </div>
 
-<div class="container">
+<!-- ACTION BUTTONS -->
+<div style="margin-bottom:20px; display:flex; flex-wrap:wrap; gap:10px;">
 
-    <!-- ✅ STATS -->
-    <div class="cards">
-        <div class="card">
-            <h3>{{ total_customers }}</h3>
-            <p>Total Customers</p>
-        </div>
+    <a href="{% url 'add_area' %}" class="btn btn-blue">Add Area</a>
+    <a href="{% url 'add_newspaper' %}" class="btn btn-green">Add Newspaper</a>
+    <a href="{% url 'add_customer' %}" class="btn btn-purple">Add Customer</a>
+    <a href="{% url 'customer_list' %}" class="btn btn-blue">Customer List</a>
+    <a href="{% url 'area_bill' %}" class="btn btn-green">Area Billing</a>
+    <a href="{% url 'uploaded_payments' %}" class="btn btn-red">Uploaded Payments</a>
 
-        <div class="card">
-            <h3>{{ total_areas }}</h3>
-            <p>Total Areas</p>
-        </div>
+</div>
 
-        <div class="card">
-            <h3>{{ total_bills }}</h3>
-            <p>Total Bills</p>
-        </div>
+<!-- AREA TABLE -->
+<div class="card">
 
-        <div class="card">
-            <h3>{{ total_collection }}</h3>
-            <p>Total Collection ₹</p>
-        </div>
-    </div>
+    <h3>📍 Area Overview</h3>
 
-    <!-- ✅ BUTTONS -->
-    <div class="buttons">
-
-        <a href="/add-area/" class="btn blue">Add Area</a>
-
-        <a href="/add-newspaper/" class="btn green">Add Newspaper</a>
-
-        <a href="/add-customer/" class="btn purple">Add Customer</a>
-
-        <a href="/customers/" class="btn blue">Customer List</a>
-
-        <a href="/generate-bill/" class="btn green">Generate Bill</a>
-
-        <a href="/area-billing/" class="btn purple">Area Billing</a>
-
-        <!-- 🔥 IMPORTANT BUTTON -->
-        <a href="/uploaded-payments/" class="btn red">
-            📸 Uploaded Payments
-            {% if pending_payments > 0 %}
-                ({{ pending_payments }})
-            {% endif %}
-        </a>
-
-    </div>
-
-    <!-- ✅ AREA DATA TABLE -->
-    <table>
-        <tr>
-            <th>Area</th>
-            <th>Customers</th>
+    <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+        <tr style="background:#1e3a8a; color:white;">
+            <th style="padding:10px; text-align:left;">Area</th>
+            <th style="padding:10px;">Customers</th>
         </tr>
 
-        {% for area in area_data %}
-        <tr>
-            <td>{{ area.area__name }}</td>
-            <td>{{ area.count }}</td>
+        {% for a in area_data %}
+        <tr style="border-bottom:1px solid #ddd;">
+            <td style="padding:10px;">{{ a.area__name }}</td>
+            <td style="text-align:center;">{{ a.count }}</td>
         </tr>
         {% endfor %}
+
     </table>
 
 </div>
 
-</body>
-</html>
+{% endblock %}

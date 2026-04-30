@@ -2,72 +2,91 @@
 
 {% block content %}
 
-<div class="page-title">
-    <div>
-        <h2>Customer List</h2>
-        <p>Search and manage all customers</p>
-    </div>
-     <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
-</div>
+<h2>👥 Customer List</h2>
 
+<!-- SEARCH -->
 <div class="card">
-    <form method="GET" class="search-bar">
-        <div>
-            <label>Search</label>
-            <input type="text" name="search" value="{{ search }}" placeholder="Enter name or phone">
-        </div>
+    <form method="get">
+        <input type="text" name="search"
+               placeholder="Enter name or phone"
+               value="{{ search }}"
+               style="padding:10px; width:70%; border-radius:6px; border:1px solid #ccc;">
 
-        <div>
-            <button type="submit" class="btn">Search</button>
-        </div>
+        <button type="submit" class="btn btn-blue">Search</button>
     </form>
 </div>
 
-{% if customers %}
+<!-- CUSTOMER TABLE -->
 <div class="card">
-    <div class="table-wrap">
-        <table>
-            <tr>
-                <th>Name</th>
-                <th>Phone</th>
-                <th>Area</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
 
-            {% for c in customers %}
-            <tr>
-                <td>{{ c.name }}</td>
-                <td>{{ c.phone }}</td>
-                <td>{{ c.area.name }}</td>
+    <table style="width:100%; border-collapse:collapse;">
+        <tr style="background:#1e3a8a; color:white;">
+            <th style="padding:10px;">Name</th>
+            <th>Phone</th>
+            <th>Area</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
 
-                <td>
-                    {% if c.status == "Active" %}
-                        <span class="badge badge-active">Active</span>
-                    {% elif c.status == "Stopped" %}
-                        <span class="badge badge-stopped">Stopped</span>
-                    {% else %}
-                        <span class="badge badge-inactive">Inactive</span>
-                    {% endif %}
-                </td>
+        {% for c in customers %}
+        <tr style="border-bottom:1px solid #ddd;">
+            <td style="padding:10px;">{{ c.name }}</td>
+            <td>{{ c.phone }}</td>
+            <td>{{ c.area.name }}</td>
 
-                <td>
-                    <div class="actions">
-                        <a href="{% url 'activate_customer' c.id %}" class="btn btn-success">Active</a>
-                        <a href="{% url 'stop_customer' c.id %}" class="btn btn-warning">Stop</a>
-                        <a href="{% url 'deactivate_customer' c.id %}" class="btn btn-danger">Inactive</a>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
+            <!-- STATUS -->
+            <td>
+                {% if c.status == "Active" %}
+                    <span style="color:green; font-weight:bold;">Active</span>
 
-        </table>
-    </div>
+                {% elif c.status == "Stopped" %}
+                    <span style="color:orange; font-weight:bold;">Stopped</span>
+
+                {% else %}
+                    <span style="color:red; font-weight:bold;">Inactive</span>
+                {% endif %}
+            </td>
+
+            <!-- ACTIONS -->
+            <td>
+
+                {% if c.status == "Active" %}
+                    <a href="/customers/stop/{{ c.id }}/" class="btn btn-purple">
+                        Stop
+                    </a>
+
+                    <a href="/customers/deactivate/{{ c.id }}/" class="btn btn-red">
+                        Inactive
+                    </a>
+
+                {% elif c.status == "Stopped" %}
+                    <a href="/customers/activate/{{ c.id }}/" class="btn btn-green">
+                        Start
+                    </a>
+
+                {% elif c.status == "Inactive" %}
+                    <a href="/customers/activate/{{ c.id }}/" class="btn btn-green">
+                        Active
+                    </a>
+                {% endif %}
+
+                <a href="/customer-delete/{{ c.id }}/" class="btn btn-red">
+                    Delete
+                </a>
+
+            </td>
+        </tr>
+
+        {% empty %}
+        <tr>
+            <td colspan="5" style="text-align:center; padding:15px;">
+                No customers found
+            </td>
+        </tr>
+        {% endfor %}
+
+    </table>
+
 </div>
-{% else %}
-<div class="card empty-box">
-    <p>Search customers to view list</p>
-</div>
-{% endif %}
 
 {% endblock %}

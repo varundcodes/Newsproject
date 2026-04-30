@@ -512,7 +512,6 @@ def customer_logout(request):
 
 
 def customer_dashboard(request):
-    # ✅ Session check (not Django auth)
     customer_id = request.session.get('customer_id')
 
     if not customer_id:
@@ -523,18 +522,13 @@ def customer_dashboard(request):
     bills = Bill.objects.filter(customer=customer).order_by('-id')
 
     for bill in bills:
-        # ✅ Invoice URL
-        bill.invoice_url = generate_invoice_image(bill)
-
-        # ✅ UPI Link
         bill.upi_link = f"upi://pay?pa={settings.OWNER_UPI_ID}&pn={settings.OWNER_NAME}&am={bill.total_amount}"
 
-        # ✅ QR Code generation
-        qr = qrcode.make(bill.upi_link)
-        buffer = BytesIO()
-        qr.save(buffer, format="PNG")
+        # temporary safe invoice URL
+        bill.invoice_url = "#"
 
-        bill.qr_code = base64.b64encode(buffer.getvalue()).decode()
+        # temporary safe QR empty
+        bill.qr_code = ""
 
     return render(request, 'core/customer-dashboard.html', {
         'customer': customer,
@@ -788,7 +782,10 @@ def test_whatsapp(request):
 
 
 def send_whatsapp_invoice(phone, message, image_url):
-    client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+    client = Client(
+        settings.TWILIO_ACCOUNT_SID,
+        settings.TWILIO_AUTH_TOKEN
+    )
 
     client.messages.create(
         from_=settings.TWILIO_WHATSAPP_NUMBER,

@@ -7,7 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY
 SECRET_KEY = 'django-insecure-je3cd_i2+!%c4=^zdcul2^8#r=ye!2epvh2oz@ekm__0$d'
 
-DEBUG = False   
+DEBUG = False
 
 ALLOWED_HOSTS = [
     "127.0.0.1",
@@ -136,7 +136,8 @@ OWNER_QR_IMAGE = "qr_code.jpg"
 
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
-TWILIO_WHATSAPP_NUMBER = os.environ.get("TWILIO_WHATSAPP_NUMBER", "whatsapp:+14155238886")
+TWILIO_WHATSAPP_NUMBER = os.environ.get("TWILIO_WHATSAPP_NUMBER")
+SITE_URL = os.environ.get("SITE_URL")
 
 OWNER_UPI_ID = os.environ.get("OWNER_UPI_ID")
 OWNER_NAME = os.environ.get("OWNER_NAME")

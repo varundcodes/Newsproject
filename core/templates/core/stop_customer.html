@@ -2,44 +2,38 @@
 
 {% block content %}
 
-<div class="page-title">
-    <div>
-        <h2>Stop Customer</h2>
-        <p>Pause service for selected dates</p>
-    </div>
+<h2>⏸ Stop Customer Delivery</h2>
 
-    <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
-</div>
+<div class="card" style="max-width:600px; margin:auto;">
 
-<div class="card">
-    <p><strong>Customer:</strong> {{ customer.name }}</p>
-    <p><strong>Phone:</strong> {{ customer.phone }}</p>
-    <p><strong>Area:</strong> {{ customer.area.name }}</p>
+    <h3>{{ customer.name }}</h3>
+    <p><b>Phone:</b> {{ customer.phone }}</p>
+    <p><b>Area:</b> {{ customer.area.name }}</p>
 
-    <form method="POST">
+    <form method="post">
         {% csrf_token %}
 
-        <div class="form-row">
-            <div>
-                <label>Stop From</label>
-                {{ form.stop_start_date }}
-            </div>
+        <label><b>Stop Start Date</b></label><br>
+        {{ form.stop_start_date }}
+        <br><br>
 
-            <div>
-                <label>Stop To</label>
-                {{ form.stop_end_date }}
-            </div>
-        </div>
+        <label><b>Stop End Date</b></label><br>
+        {{ form.stop_end_date }}
+        <br><br>
 
-        <div style="margin-top:15px;">
-            <label>Reason</label>
-            {{ form.stop_reason }}
-        </div>
+        <label><b>Reason</b></label><br>
+        {{ form.stop_reason }}
+        <br><br>
 
-        <div style="margin-top:20px;">
-            <button type="submit" class="btn btn-warning">Save Stop Details</button>
-        </div>
+        <button type="submit" class="btn btn-purple">
+            Save Stop Details
+        </button>
+
+        <a href="{% url 'customer_list' %}" class="btn btn-blue">
+            Cancel
+        </a>
     </form>
+
 </div>
 
 {% endblock %}
