@@ -499,9 +499,18 @@ def customer_login(request):
 
         customer = Customer.objects.filter(phone=phone).first()
 
-        if customer and password == "custo@12345":
-            request.session['customer_id'] = customer.id
-            return redirect('/customer-dashboard/')
+        if not customer:
+            return render(request, 'core/customer_login.html', {
+                'error': 'Phone number not found'
+            })
+
+        if password != "custo@12345":
+            return render(request, 'core/customer_login.html', {
+                'error': 'Wrong password'
+            })
+
+        request.session['customer_id'] = customer.id
+        return redirect('/customer-dashboard/')
 
     return render(request, 'core/customer_login.html')
 
