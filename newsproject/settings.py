@@ -9,8 +9,19 @@ SECRET_KEY = 'django-insecure-je3cd_i2+!%c4=^zdcul2^8#r=ye!2epvh2oz@ekm__0$d'
 
 DEBUG = False   
 
-ALLOWED_HOSTS = ["pradeepnews.in", "www.pradeepnews.in"]
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    "newsproject-qjr8.onrender.com",
+    "pradeepnews.in",
+    "www.pradeepnews.in",
+]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://newsproject-qjr8.onrender.com",
+    "https://pradeepnews.in",
+    "https://www.pradeepnews.in",
+]
 
 # APPS
 INSTALLED_APPS = [
