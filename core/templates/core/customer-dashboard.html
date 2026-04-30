@@ -120,9 +120,9 @@
             </p>
 
             <!-- ✅ QR Code -->
-            <div class="qr">
-                <img src="data:image/png;base64,{{ bill.qr_code }}" width="140">
-            </div>
+            {% if bill.qr_code %}
+                <img src="data:image/png;base64,{{ bill.qr_code }}" width="150">
+                {% endif %}
 
             <!-- ✅ Buttons -->
             <div>

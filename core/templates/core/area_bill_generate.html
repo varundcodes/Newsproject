@@ -34,13 +34,16 @@
 {% if customers %}
 
 <div class="card">
+
     <h3>Customers</h3>
 
-    <button onclick="sendAll()" class="btn btn-green">
-        🚀 Send All Bills via WhatsApp
+    <button onclick="sendAllWhatsApp()" class="btn btn-green">
+        🚀 Send All Bills
     </button>
 
-    <br><br>
+    <p id="progress" style="margin-top:10px; font-weight:bold; color:#2563eb;"></p>
+
+    <br>
 
     {% for c in customers %}
         <div class="card" style="background:#f9fafb;">
@@ -53,6 +56,7 @@
             </a>
         </div>
     {% endfor %}
+
 </div>
 
 {% else %}
@@ -64,8 +68,9 @@
 {% endif %}
 
 <script>
-function sendAll() {
+function sendAllWhatsApp() {
     const links = document.querySelectorAll(".whatsapp-link");
+    const progress = document.getElementById("progress");
 
     if (links.length === 0) {
         alert("No customers found!");
@@ -75,12 +80,18 @@ function sendAll() {
     let i = 0;
 
     function openNext() {
-        if (i >= links.length) return;
+        if (i >= links.length) {
+            progress.innerText = "✅ All messages opened!";
+            return;
+        }
+
+        progress.innerText = "Sending " + (i + 1) + " / " + links.length;
 
         window.open(links[i].href, "_blank");
+
         i++;
 
-        setTimeout(openNext, 5000);
+        setTimeout(openNext, 2500);
     }
 
     openNext();

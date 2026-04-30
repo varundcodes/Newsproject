@@ -522,19 +522,19 @@ def customer_dashboard(request):
     bills = Bill.objects.filter(customer=customer).order_by('-id')
 
     for bill in bills:
-        bill.upi_link = f"upi://pay?pa={settings.OWNER_UPI_ID}&pn={settings.OWNER_NAME}&am={bill.total_amount}"
 
-        # temporary safe invoice URL
-        bill.invoice_url = "#"
+      upi_link = f"upi://pay?pa={settings.OWNER_UPI_ID}&pn={settings.OWNER_NAME}&am={bill.total_amount}"
 
-        # temporary safe QR empty
-        bill.qr_code = ""
+    # Generate QR
+    qr = qrcode.make(upi_link)
 
-    return render(request, 'core/customer-dashboard.html', {
-        'customer': customer,
-        'bills': bills,
-    })
+    buffer = BytesIO()
+    qr.save(buffer, format="PNG")
 
+    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+    bill.qr_code = qr_base64
+    bill.upi_link = upi_link
 
 
 
