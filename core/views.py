@@ -1,4 +1,6 @@
 from decimal import Decimal
+from django.http import HttpResponse
+from PIL import Image, ImageDraw, ImageFont
 from datetime import date
 import calendar
 import base64
@@ -15,6 +17,8 @@ from django.core.files.base import ContentFile
 from .forms import AreaForm, NewspaperForm, CustomerForm, StopCustomerForm
 from .models import Customer, Area, Bill, Payment, MONTH_CHOICES
 import base64 
+from twilio.rest import Client
+import os
 
 def generate_qr(upi_id, name, amount):
     upi_url = f"upi://pay?pa={upi_id}&pn={name}&am={amount}"
@@ -352,7 +356,6 @@ def area_customer_list(request):
         'search': search,
     })
 
-
 @login_required(login_url='/')
 def area_bill_generate(request):
     if not request.user.is_staff:
@@ -379,19 +382,32 @@ def area_bill_generate(request):
         for c in customers:
             amounts = _calculate_amount(c, month, year)
 
-            bill, created = Bill.objects.update_or_create(
+            bill = Bill.objects.filter(
                 customer=c,
                 month=month,
-                year=year,
-                defaults={
-                    'newspaper_amount': amounts['newspaper_amount'],
-                    'additional_paper_amount': amounts['additional_paper_amount'],
-                    'weekly_magazine_amount': amounts['weekly_magazine_amount'],
-                    'monthly_magazine_amount': amounts['monthly_magazine_amount'],
-                    'total_amount': amounts['total_amount'],
-                    'is_paid': False,
-                }
-            )
+                year=year
+            ).order_by('-id').first()
+
+            if bill:
+                bill.newspaper_amount = amounts['newspaper_amount']
+                bill.additional_paper_amount = amounts['additional_paper_amount']
+                bill.weekly_magazine_amount = amounts['weekly_magazine_amount']
+                bill.monthly_magazine_amount = amounts['monthly_magazine_amount']
+                bill.total_amount = amounts['total_amount']
+                bill.payment_status = 'Pending'
+                bill.save()
+            else:
+                bill = Bill.objects.create(
+                    customer=c,
+                    month=month,
+                    year=year,
+                    newspaper_amount=amounts['newspaper_amount'],
+                    additional_paper_amount=amounts['additional_paper_amount'],
+                    weekly_magazine_amount=amounts['weekly_magazine_amount'],
+                    monthly_magazine_amount=amounts['monthly_magazine_amount'],
+                    total_amount=amounts['total_amount'],
+                    payment_status='Pending',
+                )
 
             message = f"""
 Hello {c.name},
@@ -496,6 +512,7 @@ def customer_logout(request):
 
 
 def customer_dashboard(request):
+    # ✅ Session check (not Django auth)
     customer_id = request.session.get('customer_id')
 
     if not customer_id:
@@ -503,56 +520,56 @@ def customer_dashboard(request):
 
     customer = get_object_or_404(Customer, id=customer_id)
 
-    latest_bill = Bill.objects.filter(customer=customer).order_by('-id').first()
+    bills = Bill.objects.filter(customer=customer).order_by('-id')
 
-    qr_code = None
+    for bill in bills:
+        # ✅ Invoice URL
+        bill.invoice_url = generate_invoice_image(bill)
 
-    if latest_bill:
-        import base64
+        # ✅ UPI Link
+        bill.upi_link = f"upi://pay?pa={settings.OWNER_UPI_ID}&pn={settings.OWNER_NAME}&am={bill.total_amount}"
 
-        qr_image = generate_qr(
-            settings.OWNER_UPI_ID,
-            settings.OWNER_NAME,
-            latest_bill.total_amount
-        )
+        # ✅ QR Code generation
+        qr = qrcode.make(bill.upi_link)
+        buffer = BytesIO()
+        qr.save(buffer, format="PNG")
 
-        qr_code = base64.b64encode(qr_image).decode()
+        bill.qr_code = base64.b64encode(buffer.getvalue()).decode()
 
     return render(request, 'core/customer-dashboard.html', {
         'customer': customer,
-        'latest_bill': latest_bill,
-        'owner_upi': settings.OWNER_UPI_ID,
-        'owner_name': settings.OWNER_NAME,
-        'qr_code': qr_code,
+        'bills': bills,
     })
 
 
 
-@login_required(login_url='/customer-login/')
-def upload_payment(request, bill_id):
-    if request.user.is_staff:
-        return redirect('admin_dashboard')
 
-    bill = get_object_or_404(Bill, id=bill_id)
-    customer = get_object_or_404(Customer, user=request.user)
+def upload_payment(request, bill_id):
+    customer_id = request.session.get('customer_id')
+
+    if not customer_id:
+        return redirect('/customer-login/')
+
+    customer = get_object_or_404(Customer, id=customer_id)
+    bill = get_object_or_404(Bill, id=bill_id, customer=customer)
 
     if request.method == 'POST':
-        amount = request.POST.get('amount')
-        screenshot = request.FILES.get('screenshot')
-
         Payment.objects.create(
             bill=bill,
             customer=customer,
-            amount=amount,
-            screenshot=screenshot
+            amount=bill.total_amount,
+            payment_method='UPI',
+            screenshot=request.FILES.get('proof'),
+            status='Pending'
         )
 
-        messages.success(request, "Payment uploaded successfully")
-        return redirect('customer_dashboard')
+        messages.success(request, "Payment proof uploaded successfully. Waiting for admin verification.")
+        return redirect('/customer-dashboard/')
 
     return render(request, 'core/upload_payment.html', {
         'bill': bill
     })
+
 
 @login_required(login_url='/')
 def delete_customer(request, customer_id):
@@ -647,3 +664,293 @@ Thank you 🙏
         'whatsapp_link': whatsapp_link,
     })
 
+@login_required(login_url='/')
+def payment_history(request):
+    if not request.user.is_staff:
+        return redirect('customer_dashboard')
+
+    areas = Area.objects.all().order_by('name')
+
+    selected_area = request.GET.get('area')
+    selected_method = request.GET.get('method')
+
+    payments = Payment.objects.select_related(
+        'customer',
+        'bill',
+        'customer__area'
+    ).all().order_by('-date')
+
+    if selected_area:
+        payments = payments.filter(customer__area_id=selected_area)
+
+    if selected_method:
+        payments = payments.filter(payment_method=selected_method)
+
+    return render(request, 'core/area_payment_history.html', {
+        'areas': areas,
+        'payments': payments,
+        'selected_area': selected_area,
+        'selected_method': selected_method,
+    })
+
+
+
+@login_required(login_url='/')
+def verify_payment(request, payment_id):
+    if not request.user.is_staff:
+        return redirect('customer_dashboard')
+
+    payment = get_object_or_404(Payment, id=payment_id)
+    payment.status = 'Verified'
+    payment.save()
+
+    messages.success(request, 'Payment verified successfully.')
+    return redirect('payment_history')
+
+
+@login_required(login_url='/')
+def reject_payment(request, payment_id):
+    if not request.user.is_staff:
+        return redirect('customer_dashboard')
+
+    payment = get_object_or_404(Payment, id=payment_id)
+    payment.status = 'Rejected'
+    payment.save()
+
+    messages.error(request, 'Payment rejected.')
+    return redirect('payment_history')
+
+
+
+@login_required(login_url='/')
+def add_manual_payment(request):
+    if not request.user.is_staff:
+        return redirect('customer_dashboard')
+
+    customers = Customer.objects.all().order_by('name')
+
+    if request.method == 'POST':
+        customer_id = request.POST.get('customer')
+        month = request.POST.get('month')
+        year = request.POST.get('year')
+        payment_method = request.POST.get('payment_method')
+        amount = request.POST.get('amount')
+
+        customer = get_object_or_404(Customer, id=customer_id)
+
+        # 🔥 Find bill
+        bill = Bill.objects.filter(
+            customer=customer,
+            month=month,
+            year=year
+        ).first()
+
+        if not bill:
+            messages.error(request, "Bill not found for selected month")
+            return redirect('add_manual_payment')
+
+        # 🔥 Create payment
+        Payment.objects.create(
+            bill=bill,
+            customer=customer,
+            amount=amount,
+            payment_method=payment_method,
+            status='Verified'
+        )
+
+        messages.success(request, "Payment added successfully")
+        return redirect('payment_history')
+
+    return render(request, 'core/add_manual_payment.html', {
+        'customers': customers,
+        'month_choices': MONTH_CHOICES
+    })
+
+def send_whatsapp_message(phone, message):
+    client = Client(
+        settings.TWILIO_ACCOUNT_SID,
+        settings.TWILIO_AUTH_TOKEN
+    )
+
+    client.messages.create(
+        from_=settings.TWILIO_WHATSAPP_NUMBER,
+        body=message,
+        to=f"whatsapp:+91{phone}"
+    )
+
+
+def test_whatsapp(request):
+    send_whatsapp_message(
+        "9483476931",
+        "Hello Varun 👋 NewsHub WhatsApp is working 🚀"
+    )
+    return HttpResponse("Message Sent")
+
+
+def send_whatsapp_invoice(phone, message, image_url):
+    client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+
+    client.messages.create(
+        from_=settings.TWILIO_WHATSAPP_NUMBER,
+        body=message,
+        media_url=[image_url],
+        to=f"whatsapp:+91{phone}"
+    )
+
+@login_required(login_url='/')
+def bulk_send_invoice(request):
+    if not request.user.is_staff:
+        return redirect('customer_dashboard')
+
+    if request.method == "POST":
+        area_id = request.POST.get("area")
+        month = request.POST.get("month")
+        year = request.POST.get("year")
+
+        customers = Customer.objects.filter(area_id=area_id, status="Active")
+
+        for customer in customers:
+            bill = Bill.objects.filter(
+                customer=customer,
+                month=month,
+                year=year
+            ).order_by('-id').first()
+
+            if bill:
+                image_url = generate_invoice_image(bill)
+
+                message = f"""
+Hello {customer.name},
+
+Your Newspaper Bill for {month} {year} is ₹{bill.total_amount}
+
+Please check your invoice attached.
+
+Thank you 🙏
+"""
+                send_whatsapp_invoice(customer.phone, message, image_url)
+
+        messages.success(request, "Invoices sent successfully.")
+        return redirect('area_bill')
+
+    return redirect('area_bill')
+
+
+def generate_invoice_image(bill):
+    customer = bill.customer
+
+    width, height = 900, 1250
+    img = Image.new("RGB", (width, height), "white")
+    draw = ImageDraw.Draw(img)
+
+    try:
+        title_font = ImageFont.truetype("arial.ttf", 42)
+        heading_font = ImageFont.truetype("arial.ttf", 28)
+        normal_font = ImageFont.truetype("arial.ttf", 24)
+        small_font = ImageFont.truetype("arial.ttf", 20)
+        big_font = ImageFont.truetype("arial.ttf", 34)
+    except:
+        title_font = ImageFont.load_default()
+        heading_font = ImageFont.load_default()
+        normal_font = ImageFont.load_default()
+        small_font = ImageFont.load_default()
+        big_font = ImageFont.load_default()
+
+    # Border
+    draw.rectangle((20, 20, width - 20, height - 20), outline="blue", width=3)
+
+    # Header
+    draw.text((230, 40), "PRADEEP NEWS AGENCY", fill="navy", font=title_font)
+    draw.text((270, 95), "Newspaper Distribution Service", fill="black", font=normal_font)
+    draw.text((220, 130), "Kumaraswamy Layout 2nd Stage, Bangalore", fill="black", font=small_font)
+    draw.text((650, 50), "Mob: 99645 21822", fill="black", font=small_font)
+
+    draw.line((40, 175, width - 40, 175), fill="blue", width=2)
+
+    # Bill heading
+    draw.text((385, 190), "CASH BILL", fill="navy", font=heading_font)
+
+    # Customer details
+    draw.text((50, 250), f"No: {bill.id}", fill="red", font=normal_font)
+    draw.text((620, 250), f"Date: {date.today().strftime('%d/%m/%Y')}", fill="black", font=normal_font)
+
+    draw.text((50, 300), f"Name: {customer.name}", fill="black", font=normal_font)
+    draw.text((620, 300), f"Phone: {customer.phone}", fill="black", font=normal_font)
+
+    draw.text((50, 350), f"Area: {customer.area.name}", fill="black", font=normal_font)
+    draw.text((50, 395), f"Address: {customer.address[:55]}", fill="black", font=small_font)
+
+    draw.line((40, 440, width - 40, 440), fill="blue", width=2)
+
+    # Table
+    draw.rectangle((50, 470, 850, 790), outline="blue", width=2)
+    draw.line((650, 470, 650, 790), fill="blue", width=2)
+    draw.line((50, 520, 850, 520), fill="blue", width=2)
+
+    draw.text((80, 485), "Particulars", fill="black", font=normal_font)
+    draw.text((700, 485), "Amount", fill="black", font=normal_font)
+
+    y = 540
+
+    items = [
+        ("Newspaper", bill.newspaper_amount),
+        ("Additional Paper", bill.additional_paper_amount),
+        ("Weekly Magazine", bill.weekly_magazine_amount),
+        ("Monthly Magazine", bill.monthly_magazine_amount),
+    ]
+
+    for name, amount in items:
+        if amount and amount > 0:
+            draw.text((80, y), name, fill="black", font=normal_font)
+            draw.text((700, y), f"Rs. {amount}", fill="black", font=normal_font)
+            y += 50
+
+    draw.line((50, 800, 850, 800), fill="blue", width=2)
+
+    # Month + Total
+    draw.text((60, 830), f"For the Month of: {bill.month} {bill.year}", fill="black", font=normal_font)
+    draw.text((610, 830), "Total", fill="black", font=big_font)
+    draw.text((720, 830), f"Rs. {bill.total_amount}", fill="red", font=big_font)
+
+    # QR Code
+    upi_url = f"upi://pay?pa={settings.OWNER_UPI_ID}&pn={settings.OWNER_NAME}&am={bill.total_amount}"
+
+    qr = qrcode.make(upi_url)
+    qr = qr.resize((170, 170))
+
+    img.paste(qr, (60, 900))
+
+    draw.text((250, 920), "SCAN & PAY", fill="navy", font=heading_font)
+    draw.text((250, 965), f"UPI ID: {settings.OWNER_UPI_ID}", fill="black", font=normal_font)
+    draw.text((250, 1010), "Pay using GPay / PhonePe / Paytm", fill="black", font=normal_font)
+
+    draw.text((600, 1120), "Signature", fill="black", font=normal_font)
+
+    # Save
+    invoice_dir = os.path.join(settings.MEDIA_ROOT, "invoices")
+    os.makedirs(invoice_dir, exist_ok=True)
+
+    file_path = os.path.join(invoice_dir, f"invoice_{bill.id}.png")
+    img.save(file_path)
+
+    return f"{settings.SITE_URL}/media/invoices/invoice_{bill.id}.png"
+
+
+def test_invoice(request):
+    bill = Bill.objects.latest('id')
+    image_url = generate_invoice_image(bill)
+    return HttpResponse(f"Invoice created: <a href='{image_url}'>{image_url}</a>")
+
+
+@login_required(login_url='/')
+def uploaded_payments(request):
+    if not request.user.is_staff:
+        return redirect('customer_dashboard')
+
+    payments = Payment.objects.select_related(
+        'customer', 'bill', 'customer__area'
+    ).filter(status='Pending').order_by('-date')
+
+    return render(request, 'core/uploaded_payments.html', {
+        'payments': payments
+    })

@@ -40,13 +40,14 @@
         }
 
         .send-all {
-            background: #dc2626;
+            background: #16a34a;
             color: white;
-            padding: 10px 15px;
+            padding: 12px 18px;
             border-radius: 8px;
             margin-bottom: 15px;
             border: none;
             cursor: pointer;
+            font-weight: bold;
         }
 
         .card {
@@ -83,7 +84,7 @@
 
     <h2>📊 Area Wise Billing</h2>
 
-    <!-- FORM -->
+    <!-- FILTER FORM -->
     <form method="get">
         <select name="area" required>
             <option value="">Select Area</option>
@@ -114,10 +115,18 @@
 
         <h3>Customers</h3>
 
-        <!-- SEND ALL BUTTON -->
-        <button onclick="sendAll()" class="send-all">
-            🚀 Send All Bills
-        </button>
+        <!-- ✅ BULK SEND (TWILIO) -->
+        <form method="POST" action="{% url 'bulk_send_invoice' %}">
+            {% csrf_token %}
+
+            <input type="hidden" name="area" value="{{ selected_area_id }}">
+            <input type="hidden" name="month" value="{{ month }}">
+            <input type="hidden" name="year" value="{{ year }}">
+
+            <button type="submit" class="send-all">
+                📤 Send All Invoice Images via WhatsApp
+            </button>
+        </form>
 
         <!-- CUSTOMER LIST -->
         {% for c in customers %}
@@ -126,7 +135,8 @@
                 📞 {{ c.phone }}<br>
                 💰 Amount: ₹{{ c.bill_amount }}<br>
 
-                <a href="{{ c.whatsapp_link }}" target="_blank" class="btn whatsapp-link">
+                <!-- Manual WhatsApp -->
+                <a href="{{ c.whatsapp_link }}" target="_blank" class="btn">
                     📲 Send WhatsApp
                 </a>
             </div>
@@ -141,31 +151,6 @@
     <a href="{% url 'admin_dashboard' %}" class="back">⬅ Back to Dashboard</a>
 
 </div>
-
-<!-- ✅ FIXED BULK SCRIPT -->
-<script>
-function sendAll() {
-    const links = document.querySelectorAll(".whatsapp-link");
-
-    if (links.length === 0) {
-        alert("No customers found!");
-        return;
-    }
-
-    let i = 0;
-
-    function openNext() {
-        if (i >= links.length) return;
-
-        window.open(links[i].href, "_blank");
-        i++;
-
-        setTimeout(openNext, 2500); // delay between openings
-    }
-
-    openNext();
-}
-</script>
 
 </body>
 </html>

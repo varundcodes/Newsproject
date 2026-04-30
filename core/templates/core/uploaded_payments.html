@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Uploaded Payments</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f3f4f6;
+            margin: 0;
+        }
+
+        .header {
+            background: #1e293b;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 22px;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1100px;
+            margin: 30px auto;
+        }
+
+        table {
+            width: 100%;
+            background: white;
+            border-collapse: collapse;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #1e293b;
+            color: white;
+        }
+
+        .btn {
+            padding: 8px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: white;
+            margin: 2px;
+            display: inline-block;
+        }
+
+        .verify {
+            background: #16a34a;
+        }
+
+        .reject {
+            background: #dc2626;
+        }
+
+        .view {
+            background: #2563eb;
+        }
+
+        .back {
+            display: block;
+            margin-top: 20px;
+            text-align: center;
+            text-decoration: none;
+            color: #2563eb;
+            font-size: 18px;
+        }
+
+        .msg {
+            background: #dcfce7;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            color: #166534;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    📸 Uploaded Payment Verification
+</div>
+
+<div class="container">
+
+    <!-- ✅ Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="msg">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <table>
+        <tr>
+            <th>Customer</th>
+            <th>Area</th>
+            <th>Bill</th>
+            <th>Amount</th>
+            <th>Screenshot</th>
+            <th>Action</th>
+        </tr>
+
+        {% for payment in payments %}
+        <tr>
+            <td>{{ payment.customer.name }}</td>
+            <td>{{ payment.customer.area.name }}</td>
+            <td>{{ payment.bill.month }} {{ payment.bill.year }}</td>
+            <td>₹{{ payment.amount }}</td>
+
+            <td>
+                {% if payment.screenshot %}
+                    <a href="{{ payment.screenshot.url }}" target="_blank" class="btn view">
+                        View
+                    </a>
+                {% else %}
+                    No Image
+                {% endif %}
+            </td>
+
+            <td>
+                <a href="{% url 'verify_payment' payment.id %}" class="btn verify">
+                    Verify
+                </a>
+
+                <a href="{% url 'reject_payment' payment.id %}" class="btn reject">
+                    Reject
+                </a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6">No pending payments</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <a href="/dashboard/" class="back">⬅ Back to Dashboard</a>
+
+</div>
+
+</body>
+</html>

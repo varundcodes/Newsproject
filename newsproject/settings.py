@@ -7,9 +7,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY
 SECRET_KEY = 'django-insecure-je3cd_i2+!%c4=^zdcul2^8#r=ye!2epvh2oz@ekm__0$d'
 
-DEBUG = True
+DEBUG = False   
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["pradeepnews.in", "www.pradeepnews.in"]
+
 
 # APPS
 INSTALLED_APPS = [
@@ -102,7 +103,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # =========================
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # =========================
 # DEFAULT ID
@@ -114,9 +115,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # OWNER PAYMENT DETAILS
 # =========================
 
-OWNER_UPI_ID = "pradeepgowda30@ybl"
+OWNER_UPI_ID = "pradeepgowda30@ibl"
 OWNER_NAME = "PRADEEP"
 OWNER_PHONEPE_NUMBER = "9964521822"
 OWNER_PAYTM_NUMBER = "9964521822"
 OWNER_GPAY_NUMBER = "9964521822"
 OWNER_QR_IMAGE = "qr_code.jpg"
+
+
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
+TWILIO_WHATSAPP_NUMBER = os.environ.get("TWILIO_WHATSAPP_NUMBER", "whatsapp:+14155238886")
+
+OWNER_UPI_ID = os.environ.get("OWNER_UPI_ID")
+OWNER_NAME = os.environ.get("OWNER_NAME")

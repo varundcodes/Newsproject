@@ -7,142 +7,148 @@
         body {
             font-family: Arial;
             background: #f3f4f6;
-            padding: 20px;
+            margin: 0;
+        }
+
+        .header {
+            background: #1e293b;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 22px;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 900px;
+            margin: 30px auto;
         }
 
         .card {
-            max-width: 420px;
-            margin: auto;
             background: white;
-            padding: 20px;
+            padding: 18px;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        .line {
-            border-top: 1px dashed #ccc;
-            margin: 15px 0;
-        }
-
-        .amount {
-            font-size: 28px;
-            color: #dc2626;
-            font-weight: bold;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
         .btn {
-            display: block;
-            margin-top: 12px;
-            padding: 12px;
-            background: #16a34a;
-            color: white;
-            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 14px;
             border-radius: 8px;
+            text-decoration: none;
+            color: white;
+            margin-right: 8px;
         }
 
-        .btn-upload {
+        .pay {
             background: #2563eb;
         }
 
-        .status {
-            margin-top: 10px;
+        .paynow {
+            background: #16a34a;
+        }
+
+        .invoice {
+            background: #7c3aed;
+        }
+
+        .paid {
+            color: green;
             font-weight: bold;
         }
 
-        .paid { color: green; }
-        .pending { color: red; }
-
-        .logout {
-            margin-top: 20px;
-            display: block;
-            color: red;
+        .pending {
+            color: orange;
+            font-weight: bold;
         }
 
-        .payment-box {
-            text-align: left;
-            margin-top: 15px;
+        .msg {
+            background: #dcfce7;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            color: #166534;
+        }
+
+        .logout {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: red;
+            text-decoration: none;
+        }
+
+        .qr {
+            margin-top: 10px;
         }
     </style>
 </head>
 
 <body>
 
-<div class="card">
+<div class="header">
+    Welcome {{ customer.name }}
+</div>
 
-    <h2>📰 Pradeep News Agency</h2>
+<div class="container">
 
-    <p><b>{{ customer.name }}</b></p>
-
-    {% if latest_bill %}
-
-        <p>{{ latest_bill.month }} {{ latest_bill.year }}</p>
-
-        <div class="line"></div>
-
-        <p>Total Amount</p>
-        <div class="amount">₹{{ latest_bill.total_amount }}</div>
-
-        <div class="line"></div>
-
-        <!-- UPI -->
-        <a href="upi://pay?pa={{ owner_upi }}&pn={{ owner_name }}&am={{ latest_bill.total_amount }}&cu=INR"
-           class="btn">
-           Pay via UPI
-        </a>
-
-        <p style="font-size:12px;">Use mobile or scan QR</p>
-
-        <!-- QR -->
-        {% if qr_code %}
-            <img src="data:image/png;base64,{{ qr_code }}" width="200">
-        {% endif %}
-
-        <div class="line"></div>
-
-        <!-- UPLOAD PAYMENT -->
-        {% if not latest_bill.is_paid %}
-            <a href="{% url 'upload_payment' latest_bill.id %}" class="btn btn-upload">
-                Upload Payment Screenshot
-            </a>
-        {% endif %}
-
-        <!-- STATUS -->
-        <p class="status">
-            Status:
-            {% if latest_bill.is_paid %}
-                <span class="paid">✅ Paid</span>
-            {% else %}
-                <span class="pending">❌ Pending</span>
-            {% endif %}
-        </p>
-
-        <div class="line"></div>
-
-        <!-- PAYMENT HISTORY -->
-        <div class="payment-box">
-            <h4>Payment History</h4>
-
-            {% for p in payments %}
-                <p>
-                    ₹{{ p.amount }} - {{ p.status }}
-                    {% if p.screenshot %}
-                        <br>
-                        <a href="{{ p.screenshot.url }}" target="_blank">View</a>
-                    {% endif %}
-                </p>
-            {% empty %}
-                <p>No payments yet</p>
-            {% endfor %}
-        </div>
-
-    {% else %}
-
-        <p>No bill generated yet</p>
-
+    <!-- ✅ Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="msg">{{ message }}</div>
+        {% endfor %}
     {% endif %}
 
-    <a href="{% url 'customer_logout' %}" class="logout">Logout</a>
+    {% if bills %}
+
+        {% for bill in bills %}
+        <div class="card">
+
+            <h3>{{ bill.month }} {{ bill.year }}</h3>
+
+            <p><b>Total Amount:</b> ₹{{ bill.total_amount }}</p>
+
+            <p>
+                <b>Status:</b>
+                {% if bill.payment_status == "Paid" %}
+                    <span class="paid">Paid ✅</span>
+                {% else %}
+                    <span class="pending">Pending</span>
+                {% endif %}
+            </p>
+
+            <!-- ✅ QR Code -->
+            <div class="qr">
+                <img src="data:image/png;base64,{{ bill.qr_code }}" width="140">
+            </div>
+
+            <!-- ✅ Buttons -->
+            <div>
+                <a href="{{ bill.invoice_url }}" target="_blank" class="btn invoice">
+                    View Invoice
+                </a>
+
+                <a href="{{ bill.upi_link }}" class="btn paynow">
+                    Pay Now
+                </a>
+
+                {% if bill.payment_status != "Paid" %}
+                    <a href="/upload-payment/{{ bill.id }}/" class="btn pay">
+                        Upload Payment
+                    </a>
+                {% endif %}
+            </div>
+
+        </div>
+        {% endfor %}
+
+    {% else %}
+        <p>No bills available.</p>
+    {% endif %}
+
+    <a href="/customer-logout/" class="logout">Logout</a>
 
 </div>
 

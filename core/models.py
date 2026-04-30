@@ -40,7 +40,7 @@ class AdditionalPaper(models.Model):
 # ---------------- WEEKLY MAGAZINE ----------------
 class WeeklyMagazine(models.Model):
     name = models.CharField(max_length=100)
-    weekly_price = models.FloatField()  # ✅ changed
+    weekly_price = models.FloatField()
 
     def __str__(self):
         return self.name
@@ -76,6 +76,7 @@ class Customer(models.Model):
     weekly_magazine = models.ForeignKey(WeeklyMagazine, on_delete=models.SET_NULL, null=True, blank=True)
     monthly_magazine = models.ForeignKey(MonthlyMagazine, on_delete=models.SET_NULL, null=True, blank=True)
 
+    # Custom pricing
     custom_newspaper_price = models.FloatField(null=True, blank=True)
     custom_additional_price = models.FloatField(null=True, blank=True)
     custom_weekly_price = models.FloatField(null=True, blank=True)
@@ -92,7 +93,7 @@ class Customer(models.Model):
     def __str__(self):
         return self.name
 
-    # ✅ FIXED SAVE METHOD (NO DUPLICATE USER ERROR)
+    # Auto-create user
     def save(self, *args, **kwargs):
         if not self.user:
             user, created = User.objects.get_or_create(
@@ -118,7 +119,7 @@ class Customer(models.Model):
 # ---------------- BILL ----------------
 class Bill(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-    month = models.CharField(max_length=3, choices=MONTH_CHOICES)
+    month = models.CharField(max_length=10, choices=MONTH_CHOICES)
     year = models.IntegerField()
 
     newspaper_amount = models.FloatField(default=0)
@@ -126,12 +127,17 @@ class Bill(models.Model):
     weekly_magazine_amount = models.FloatField(default=0)
     monthly_magazine_amount = models.FloatField(default=0)
 
-    total_amount = models.FloatField(default=0)
+    total_amount = models.FloatField()
 
-    is_paid = models.BooleanField(default=False)
+    PAYMENT_STATUS = (
+        ('Pending', 'Pending'),
+        ('Paid', 'Paid'),
+    )
+
+    payment_status = models.CharField(max_length=10, choices=PAYMENT_STATUS, default='Pending')
+
     created_at = models.DateTimeField(auto_now_add=True)
 
-    
     def __str__(self):
         return f"{self.customer.name} - {self.month} {self.year}"
 
@@ -154,12 +160,10 @@ class Bill(models.Model):
             else (customer.additional_paper.monthly_price if customer.additional_paper else 0)
         )
 
-        # ✅ WEEKLY LOGIC
-        weeks = 4
         weekly = (
             customer.custom_weekly_price
             if customer.custom_weekly_price is not None
-            else (customer.weekly_magazine.weekly_price * weeks if customer.weekly_magazine else 0)
+            else (customer.weekly_magazine.weekly_price * 4 if customer.weekly_magazine else 0)
         )
 
         monthly = (
@@ -172,6 +176,7 @@ class Bill(models.Model):
         self.additional_paper_amount = additional
         self.weekly_magazine_amount = weekly
         self.monthly_magazine_amount = monthly
+
         self.total_amount = newspaper + additional + weekly + monthly
 
     def save(self, *args, **kwargs):
@@ -181,16 +186,33 @@ class Bill(models.Model):
 
 # ---------------- PAYMENT ----------------
 class Payment(models.Model):
+
     STATUS_CHOICES = [
         ('Pending', 'Pending'),
         ('Verified', 'Verified'),
         ('Rejected', 'Rejected'),
     ]
 
+    PAYMENT_METHOD = [
+        ('Cash', 'Cash'),
+        ('PhonePe', 'PhonePe'),
+        ('GPay', 'GPay'),
+        ('UPI', 'UPI'),
+        ('Bank', 'Bank Transfer'),
+    ]
+
     bill = models.ForeignKey(Bill, on_delete=models.CASCADE)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
 
     amount = models.FloatField()
+
+    # ✅ ADD HERE
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT_METHOD,
+        default='Cash'
+    )
+
     screenshot = models.ImageField(upload_to='payments/', null=True, blank=True)
 
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Pending')
@@ -198,10 +220,3 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.customer.name} - {self.amount}"
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-
-        if self.status == 'Verified':
-            self.bill.is_paid = True
-            self.bill.save()
