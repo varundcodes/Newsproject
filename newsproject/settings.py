@@ -126,7 +126,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # OWNER PAYMENT DETAILS
 # =========================
 
-OWNER_UPI_ID = "pradeepgowda30@ibl"
+OWNER_UPI_ID = "pradeepgowda2210-2okaxiscnrb@cnrb"
 OWNER_NAME = "PRADEEP"
 OWNER_PHONEPE_NUMBER = "9964521822"
 OWNER_PAYTM_NUMBER = "9964521822"
