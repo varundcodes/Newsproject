@@ -523,27 +523,23 @@ def customer_logout(request):
 def customer_dashboard(request):
 
     customer_id = request.session.get('customer_id')
-
     if not customer_id:
         return redirect('/customer-login/')
 
     customer = Customer.objects.get(id=customer_id)
     bills = Bill.objects.filter(customer=customer)
 
+    import urllib.parse
 
     for bill in bills:
+        upi_params = {
+            "pa": settings.OWNER_UPI_ID,
+            "pn": settings.OWNER_NAME,
+            "am": str(bill.total_amount),
+            "cu": "INR",
+        }
 
-        upi_link = f"upi://pay?pa={settings.OWNER_UPI_ID}&pn={settings.OWNER_NAME}&am={bill.total_amount}"
-
-        qr = qrcode.make(upi_link)
-
-        buffer = BytesIO()
-        qr.save(buffer, format="PNG")
-
-        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
-
-        bill.qr_code = qr_base64
-        bill.upi_link = upi_link
+        bill.upi_link = "upi://pay?" + urllib.parse.urlencode(upi_params)
 
     return render(request, 'core/customer-dashboard.html', {
         'customer': customer,
